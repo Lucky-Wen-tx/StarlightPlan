@@ -45,6 +45,13 @@ interface NoteStore {
    * 3. 若删除的是当前打开的笔记，清空选中态（界面自动回到欢迎页）
    */
   deleteNote: (id: string) => Promise<void>;
+  /**
+   * 重命名一篇笔记（标题变更会同步重命名文件 → 返回的新 id 可能不同）：
+   * 1. 调用后端更新标题（重命名当前笔记时连同最新正文一起保存，避免丢内容）
+   * 2. 刷新笔记列表
+   * 3. 若重命名的是当前打开的笔记，同步 currentId / currentTitle 到新 id 与新标题
+   */
+  renameNote: (oldId: string, newTitle: string) => Promise<void>;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -96,6 +103,31 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         currentTitle: "",
         currentContent: "",
         lastSavedAt: null,
+      });
+    } else {
+      set({ noteList: list });
+    }
+  },
+
+  renameNote: async (oldId: string, newTitle: string): Promise<void> => {
+    // 重命名当前笔记时，连同最新正文一起提交，避免重命名丢失未保存的编辑内容
+    const state = get();
+    const data: { title: string; content?: string } =
+      state.currentId === oldId
+        ? { title: newTitle, content: state.currentContent }
+        : { title: newTitle };
+    // 1. 调用后端更新标题（标题变更会重命名 .md 文件 → id 可能变化）
+    const result = await api.update(oldId, data);
+    // 2. 刷新笔记列表
+    const list: NoteItem[] = await api.getList();
+    // 3. 若重命名的是当前打开的笔记，同步选中态到新 id / 新标题
+    if (state.currentId === oldId) {
+      set({
+        noteList: list,
+        currentId: result.id,
+        currentTitle: result.title,
+        currentContent: result.content,
+        lastSavedAt: result.updated_at,
       });
     } else {
       set({ noteList: list });

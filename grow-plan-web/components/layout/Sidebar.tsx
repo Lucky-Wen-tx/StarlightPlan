@@ -26,6 +26,7 @@ function NoteContextMenu({
   anchorRef,
   note,
   onClose,
+  onRename,
   onDelete,
 }: {
   /** 三点按钮的引用（读取锚点坐标 + 判断点击是否落在按钮上） */
@@ -34,7 +35,9 @@ function NoteContextMenu({
   note: NoteItem;
   /** 关闭菜单回调 */
   onClose: () => void;
-  /** 点击菜单项后的回调 */
+  /** 点击「重命名」后的回调（父组件内部已含关闭卡片逻辑） */
+  onRename: (note: NoteItem) => void;
+  /** 点击「删除」后的回调（父组件内部已含关闭卡片逻辑） */
   onDelete: (note: NoteItem) => void;
 }): React.ReactElement {
   /** 卡片自身 DOM 引用：测量尺寸 + 判断点击是否落在卡片内 */
@@ -131,6 +134,17 @@ function NoteContextMenu({
       // 白底 / 8px 圆角 / 无边框 / 多层柔和悬浮阴影
       className="rounded-lg bg-white dark:bg-neutral-800 p-1 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_8px_rgba(0,0,0,0.04),0_10px_20px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.25),0_12px_24px_-6px_rgba(0,0,0,0.4)]"
     >
+      {/* 重命名：图标在左、文字在右；hover 圆角浅灰高亮（无尖角） */}
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => onRename(note)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition-colors text-neutral-700 dark:text-neutral-200 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700/60"
+      >
+        <PenLine size={15} className="shrink-0" />
+        重命名
+      </button>
+
       {/* 删除笔记：图标在左、文字在右；hover 圆角浅灰高亮（无尖角）；删除项文字红色 */}
       <button
         type="button"
@@ -152,6 +166,7 @@ export default function Sidebar(): React.ReactElement {
   const fetchNoteList = useNoteStore((s) => s.fetchNoteList);
   const selectNote = useNoteStore((s) => s.selectNote);
   const deleteNote = useNoteStore((s) => s.deleteNote);
+  const renameNote = useNoteStore((s) => s.renameNote);
 
   // ── 搜索状态 ──────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -216,6 +231,30 @@ export default function Sidebar(): React.ReactElement {
       }
     },
     [deleteNote],
+  );
+
+  // ── 重命名笔记（输入框预填当前标题，便于直接修改）──────────
+  const handleRenameNote = useCallback(
+    async (note: NoteItem): Promise<void> => {
+      // 点击菜单项即关闭卡片（与删除行为保持一致）
+      setMenuNoteId(null);
+      // 预填当前标题；取消或输入空白则不操作
+      const newTitle: string | null = window.prompt(
+        "请输入新的笔记标题",
+        note.title,
+      );
+      if (!newTitle || newTitle.trim().length === 0) {
+        return;
+      }
+      try {
+        await renameNote(note.id, newTitle.trim());
+      } catch (err: unknown) {
+        const message: string =
+          err instanceof Error ? err.message : "重命名笔记失败，请稍后重试";
+        window.alert(message);
+      }
+    },
+    [renameNote],
   );
 
   // ── 新建笔记 ──────────────────────────────────────────────
@@ -367,6 +406,7 @@ export default function Sidebar(): React.ReactElement {
                       anchorRef={moreButtonRef}
                       note={note}
                       onClose={handleCloseMenu}
+                      onRename={handleRenameNote}
                       onDelete={handleDeleteNote}
                     />
                   )}
