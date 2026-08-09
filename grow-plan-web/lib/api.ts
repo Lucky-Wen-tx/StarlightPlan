@@ -103,6 +103,19 @@ export async function update(
   );
 }
 
+/**
+ * 删除笔记（软删除：后端将文件移入回收站，可恢复）
+ * DELETE /api/notes/{noteId}
+ *
+ * @param noteId - 笔记唯一标识
+ */
+export async function remove(noteId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(
+    `${BASE_URL}/notes/${encodeURIComponent(noteId)}`,
+    { method: "DELETE" },
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 图片上传 / Markdown 导入接口
 // ═══════════════════════════════════════════════════════════════

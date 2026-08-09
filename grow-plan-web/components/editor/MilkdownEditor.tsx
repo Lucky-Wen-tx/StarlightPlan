@@ -16,7 +16,7 @@
  * - 暗色模式不再调用 setTheme，由 .dark .milkdown 的 CSS 变量覆盖实现
  * - 功能全开：选中浮动工具栏、斜杠菜单、表格、KaTeX 公式、代码高亮、图片
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Crepe } from "@milkdown/crepe";
 import { replaceAll } from "@milkdown/kit/utils";
@@ -60,9 +60,6 @@ function MilkdownEditor(): React.ReactElement {
   /** 上一次渲染时的笔记 ID，用于检测笔记切换 */
   const prevNoteIdRef = useRef<string | null>(currentId);
 
-  // ── 编辑器就绪状态（初始化完成前显示加载占位）───────────────
-  const [editorReady, setEditorReady] = useState<boolean>(false);
-
   // ═══════════════════════════════════════════════════════════════
   // 初始化 Crepe 编辑器
   // 工厂函数接收 React 封装传入的挂载容器，返回 Crepe 实例；
@@ -103,12 +100,19 @@ function MilkdownEditor(): React.ReactElement {
     return crepe;
   });
 
+  // ── 编辑器就绪状态（初始化完成前显示加载占位）───────────────
+  // editorReady 是 loading 的派生状态：loading 为 false 即代表编辑器就绪。
+  // 直接计算派生值，避免在 effect 中同步 setState 引发级联渲染
+  // （ESLint 规则 react-hooks/set-state-in-effect，参考官方文档：
+  //  https://react.dev/learn/you-might-not-need-an-effect）
+  const editorReady: boolean = !loading;
+
   // ═══════════════════════════════════════════════════════════════
-  // Effect：编辑器就绪后标记 ready 并放开内容回写守卫
+  // Effect：编辑器就绪后放开内容回写守卫
+  // 就绪状态已由 editorReady 派生，此处仅重置 ref 守卫，不触发 setState
   // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
     if (!loading) {
-      setEditorReady(true);
       // 初始 content 已由 defaultValue 写入，就绪后放开守卫
       isLoadingRef.current = false;
     }

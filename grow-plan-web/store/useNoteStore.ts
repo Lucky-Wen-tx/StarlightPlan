@@ -38,12 +38,19 @@ interface NoteStore {
   fetchNoteList: () => Promise<void>;
   /** 选中一篇笔记：拉取详情 → 同步 currentId / currentTitle / currentContent */
   selectNote: (id: string) => Promise<void>;
+  /**
+   * 删除一篇笔记（软删除，移入回收站）：
+   * 1. 调用后端删除接口
+   * 2. 刷新笔记列表
+   * 3. 若删除的是当前打开的笔记，清空选中态（界面自动回到欢迎页）
+   */
+  deleteNote: (id: string) => Promise<void>;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // Store 实例
 // ═══════════════════════════════════════════════════════════════
-export const useNoteStore = create<NoteStore>((set) => ({
+export const useNoteStore = create<NoteStore>((set, get) => ({
   // ── 初始状态 ──────────────────────────────────────────────
   noteList: [],
   currentId: null,
@@ -73,5 +80,25 @@ export const useNoteStore = create<NoteStore>((set) => ({
       // 初始化保存时间为文件的实际修改时间
       lastSavedAt: detail.updated_at,
     });
+  },
+
+  deleteNote: async (id: string): Promise<void> => {
+    // 1. 调用后端软删除（文件移入回收站）
+    await api.remove(id);
+    // 2. 删除后刷新笔记列表
+    const list: NoteItem[] = await api.getList();
+    // 3. 若删除的是当前打开的笔记，清空选中态 → 界面自动回到欢迎页
+    const state = get();
+    if (state.currentId === id) {
+      set({
+        noteList: list,
+        currentId: null,
+        currentTitle: "",
+        currentContent: "",
+        lastSavedAt: null,
+      });
+    } else {
+      set({ noteList: list });
+    }
   },
 }));
