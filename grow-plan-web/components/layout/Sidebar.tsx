@@ -8,11 +8,13 @@
 import { useEffect, useCallback, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { PenLine, FileText, Search, Ellipsis, Trash2 } from "lucide-react";
 import { useNoteStore } from "@/store/useNoteStore";
+import { useRecycleStore } from "@/store/useRecycleStore";
 import { useToastStore } from "@/store/useToastStore";
 import * as api from "@/lib/api";
 import type { NoteItem } from "@/types/note";
 import InputDialog from "@/components/common/InputDialog";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import RecycleBin from "@/components/layout/RecycleBin";
 
 /**
  * 笔记操作悬浮菜单卡片
@@ -172,6 +174,10 @@ export default function Sidebar(): React.ReactElement {
   const renameNote = useNoteStore((s) => s.renameNote);
   const showToast = useToastStore((s) => s.showToast);
 
+  // ── 回收站视图状态 ────────────────────────────────────────
+  const isRecycleOpen: boolean = useRecycleStore((s) => s.isOpen);
+  const enterRecycle = useRecycleStore((s) => s.enter);
+
   // ── 搜索状态 ──────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -313,8 +319,23 @@ export default function Sidebar(): React.ReactElement {
     [currentId, selectNote, showToast],
   );
 
+  // ── 打开回收站视图（返回由回收站顶部按钮负责）─────────────
+  const handleOpenRecycle = useCallback((): void => {
+    // 拉取回收站列表失败时以轻提示反馈
+    enterRecycle().catch((err: unknown) => {
+      const message: string =
+        err instanceof Error ? err.message : "进入回收站失败，请稍后重试";
+      showToast(message);
+    });
+  }, [enterRecycle, showToast]);
+
   return (
     <aside className="w-64 shrink-0 flex flex-col border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+      {/* ── 回收站视图：整体替换为回收站面板 ───────────────── */}
+      {isRecycleOpen ? (
+        <RecycleBin />
+      ) : (
+        <>
       {/* ── 新建笔记按钮区 ─────────────────────────────────── */}
       <div className="p-4 pb-2">
         <button
@@ -459,6 +480,21 @@ export default function Sidebar(): React.ReactElement {
           onClose={() => setDeleteTarget(null)}
           onConfirm={() => handleDeleteConfirm(deleteTarget)}
         />
+      )}
+        </>
+      )}
+
+      {/* ── 底部：回收站入口（仅笔记视图显示，返回由回收站顶部按钮负责） ── */}
+      {!isRecycleOpen && (
+        <button
+          type="button"
+          onClick={handleOpenRecycle}
+          title="打开回收站"
+          className="shrink-0 flex items-center gap-2 px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 cursor-pointer transition-colors text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200"
+        >
+          <Trash2 size={15} className="shrink-0" />
+          回收站
+        </button>
       )}
     </aside>
   );

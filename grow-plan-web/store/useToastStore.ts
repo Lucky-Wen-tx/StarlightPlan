@@ -7,19 +7,28 @@
  */
 import { create } from "zustand";
 
+/** 提示类型：error 错误（红叹号）/ success 成功（绿对勾） */
+type ToastType = "error" | "success";
+
 /** 单条提示 */
 interface ToastItem {
   /** 唯一标识（模块级自增），用于精确移除 */
   id: number;
   /** 提示文案 */
   message: string;
+  /** 提示类型（决定图标与颜色） */
+  type: ToastType;
 }
 
 interface ToastStore {
   /** 当前所有待展示的提示（后进显示在最上方） */
   toasts: ToastItem[];
-  /** 显示一条提示，约 3 秒后自动消失 */
-  showToast: (message: string) => void;
+  /**
+   * 显示一条提示，约 3 秒后自动消失
+   * @param message - 提示文案
+   * @param type    - 提示类型，默认 error（保持原有红色叹号样式）
+   */
+  showToast: (message: string, type?: ToastType) => void;
   /** 手动移除指定提示（自动消失的兜底路径） */
   removeToast: (id: number) => void;
 }
@@ -33,10 +42,10 @@ let nextId = 1;
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
 
-  showToast: (message: string): void => {
+  showToast: (message: string, type: ToastType = "error"): void => {
     const id = nextId++;
     // 追加新提示
-    set((state) => ({ toasts: [...state.toasts, { id, message }] }));
+    set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
     // 定时自动移除（每次调用独立计时，互不干扰）
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));

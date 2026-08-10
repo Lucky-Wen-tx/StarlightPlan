@@ -117,6 +117,61 @@ export async function remove(noteId: string): Promise<{ message: string }> {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 回收站接口
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 获取回收站中的所有笔记摘要列表（按修改时间倒序）
+ * GET /api/recycle
+ */
+export async function getRecycleList(): Promise<NoteItem[]> {
+  return request<NoteItem[]>(`${BASE_URL}/recycle`);
+}
+
+/**
+ * 获取回收站中某篇笔记的完整内容（用于右侧只读预览）
+ * GET /api/recycle/{noteId}
+ *
+ * @param noteId - 回收站笔记唯一标识
+ */
+export async function getRecycleDetail(noteId: string): Promise<NoteDetail> {
+  return request<NoteDetail>(
+    `${BASE_URL}/recycle/${encodeURIComponent(noteId)}`,
+  );
+}
+
+/**
+ * 从回收站恢复一篇笔记（移回笔记根目录）
+ * POST /api/recycle/{noteId}/restore
+ *
+ * @param noteId - 回收站笔记唯一标识
+ * @returns 恢复后的笔记详情（id 可能因重名冲突而变化）
+ */
+export async function restoreRecycleNote(
+  noteId: string,
+): Promise<NoteDetail> {
+  return request<NoteDetail>(
+    `${BASE_URL}/recycle/${encodeURIComponent(noteId)}/restore`,
+    { method: "POST" },
+  );
+}
+
+/**
+ * 从回收站彻底删除一篇笔记（不可恢复）
+ * DELETE /api/recycle/{noteId}
+ *
+ * @param noteId - 回收站笔记唯一标识
+ */
+export async function permanentDeleteRecycle(
+  noteId: string,
+): Promise<{ message: string }> {
+  return request<{ message: string }>(
+    `${BASE_URL}/recycle/${encodeURIComponent(noteId)}`,
+    { method: "DELETE" },
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 图片上传 / Markdown 导入接口
 // ═══════════════════════════════════════════════════════════════
 

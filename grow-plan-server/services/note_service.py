@@ -413,6 +413,10 @@ def delete_note(note_id: str) -> None:
 
     shutil.move(file_path, dest)
 
+    # 记录删除时间：将回收站文件的修改时间重置为当前时间，
+    # 使回收站列表的 updated_at 字段能准确反映"删除于"时间
+    os.utime(dest)
+
 
 def list_recycle() -> list[NoteSummary]:
     """列出回收站中的所有笔记文件"""
@@ -431,6 +435,21 @@ def list_recycle() -> list[NoteSummary]:
 
     notes.sort(key=lambda n: n.updated_at, reverse=True)
     return notes
+
+
+def get_recycle_note(note_id: str) -> NoteDetail:
+    """
+    获取回收站中某篇笔记的完整内容（供前端右侧只读预览）。
+    与 get_note 对称，但读取目录为回收站，支持带时间戳后缀的文件名。
+    """
+    file_path = _find_in_recycle(note_id)
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # 以回收站中的实际文件名作为 id（可能带时间戳后缀）
+    recycle_id = os.path.splitext(os.path.basename(file_path))[0]
+    return _build_note_detail(recycle_id, file_path, content)
 
 
 def restore_note(note_id: str) -> NoteDetail:
@@ -453,6 +472,10 @@ def restore_note(note_id: str) -> NoteDetail:
         dest = _resolve_safe_path(NOTES_ROOT, dest_name)
 
     shutil.move(file_path, dest)
+
+    # 恢复后重置修改时间为当前时间，
+    # 避免笔记的"最后修改时间"残留为删除时间
+    os.utime(dest)
 
     # 读取恢复后的笔记并返回
     new_id = os.path.splitext(os.path.basename(dest))[0]

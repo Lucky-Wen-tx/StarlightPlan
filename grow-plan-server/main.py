@@ -121,6 +121,17 @@ async def list_recycle():
         raise HTTPException(status_code=500, detail=f"获取回收站列表失败: {e}")
 
 
+@app.get("/api/recycle/{note_id}")
+async def get_recycle_note(note_id: str):
+    """获取回收站中某篇笔记的完整内容（用于右侧只读预览）"""
+    try:
+        return note_service.get_recycle_note(note_id)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
 @app.post("/api/recycle/{note_id}/restore")
 async def restore_note(note_id: str):
     """从回收站恢复指定笔记"""

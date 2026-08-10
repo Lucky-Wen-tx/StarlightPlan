@@ -7,7 +7,7 @@
  * 样式：白色卡片 / 12px 圆角 / 柔和多层阴影 / 红色错误图标 / 下滑淡入动画。
  * 需在根布局挂载一次（layout.tsx），自动随 store 展示与消失。
  */
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CircleCheck } from "lucide-react";
 import { useToastStore } from "@/store/useToastStore";
 
 /** 柔和多层阴影（与侧栏悬浮菜单、模态框同款，保证视觉统一） */
@@ -31,7 +31,12 @@ export default function ToastContainer(): React.ReactElement | null {
           role="status"
           className={`flex items-center gap-2 px-4 py-2.5 rounded-[12px] bg-white dark:bg-neutral-800 text-sm text-neutral-700 dark:text-neutral-200 animate-toast-in ${TOAST_SHADOW}`}
         >
-          <AlertCircle size={16} className="shrink-0 text-red-500" />
+          {/* 成功提示：绿色对勾；错误提示：红色感叹号 */}
+          {toast.type === "success" ? (
+            <CircleCheck size={16} className="shrink-0 text-green-500" />
+          ) : (
+            <AlertCircle size={16} className="shrink-0 text-red-500" />
+          )}
           <span>{toast.message}</span>
         </div>
       ))}
