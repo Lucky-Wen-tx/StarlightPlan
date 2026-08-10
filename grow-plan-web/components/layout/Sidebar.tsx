@@ -244,6 +244,8 @@ export default function Sidebar(): React.ReactElement {
       setDeleteTarget(null);
       try {
         await deleteNote(note.id);
+        // 删除成功（软删除 → 移入回收站）以成功轻提示反馈
+        showToast("已移入回收站", "success");
       } catch (err: unknown) {
         const message: string =
           err instanceof Error ? err.message : "删除笔记失败，请稍后重试";
@@ -267,6 +269,8 @@ export default function Sidebar(): React.ReactElement {
       setInputDialog(null);
       try {
         await renameNote(note.id, newTitle);
+        // 重命名成功以成功轻提示反馈
+        showToast("重命名成功", "success");
       } catch (err: unknown) {
         const message: string =
           err instanceof Error ? err.message : "重命名笔记失败，请稍后重试";
@@ -290,6 +294,8 @@ export default function Sidebar(): React.ReactElement {
         // 刷新列表并自动选中新建的笔记
         await fetchNoteList();
         await selectNote(detail.id);
+        // 新建成功以成功轻提示反馈
+        showToast("新建笔记成功", "success");
       } catch (err: unknown) {
         const message: string =
           err instanceof Error ? err.message : "新建笔记失败，请稍后重试";
