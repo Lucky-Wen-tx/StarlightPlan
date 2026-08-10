@@ -2,14 +2,17 @@
 
 /**
  * 左侧边栏
- * - 顶部：新建笔记按钮（window.prompt 输入标题 → api.create → 刷新列表并选中）
- * - 下方：笔记列表（从 store 读取，点击切换当前笔记，高亮选中项）
+ * - 顶部：新建笔记按钮（弹出输入弹窗填标题 → api.create → 刷新列表并选中）
+ * - 下方：笔记列表（从 store 读取，点击切换当前笔记，高亮选中项；三点菜单支持重命名/删除，均走自定义模态框）
  */
 import { useEffect, useCallback, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { PenLine, FileText, Search, Ellipsis, Trash2 } from "lucide-react";
 import { useNoteStore } from "@/store/useNoteStore";
+import { useToastStore } from "@/store/useToastStore";
 import * as api from "@/lib/api";
 import type { NoteItem } from "@/types/note";
+import InputDialog from "@/components/common/InputDialog";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 
 /**
  * 笔记操作悬浮菜单卡片
@@ -167,6 +170,7 @@ export default function Sidebar(): React.ReactElement {
   const selectNote = useNoteStore((s) => s.selectNote);
   const deleteNote = useNoteStore((s) => s.deleteNote);
   const renameNote = useNoteStore((s) => s.renameNote);
+  const showToast = useToastStore((s) => s.showToast);
 
   // ── 搜索状态 ──────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -187,6 +191,16 @@ export default function Sidebar(): React.ReactElement {
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
   /** 三点按钮 DOM 引用：菜单 fixed 定位时读取锚点屏幕坐标 */
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // ── 模态框状态（替代原生 prompt / confirm）────────────────────
+  /** 新建 / 重命名共用的输入弹窗状态：null 表示关闭 */
+  const [inputDialog, setInputDialog] = useState<
+    | { mode: "create" }
+    | { mode: "rename"; note: NoteItem }
+    | null
+  >(null);
+  /** 待删除确认的笔记：null 表示无删除弹窗打开 */
+  const [deleteTarget, setDeleteTarget] = useState<NoteItem | null>(null);
 
   // 组件挂载时拉取笔记列表
   useEffect(() => {
@@ -210,72 +224,74 @@ export default function Sidebar(): React.ReactElement {
     setMenuNoteId(null);
   }, []);
 
-  // ── 删除笔记（先确认，后执行）───────────────────────────────
-  const handleDeleteNote = useCallback(
+  // ── 删除笔记：打开确认弹窗（确认后才执行软删除）──────────
+  const handleDeleteNote = useCallback((note: NoteItem): void => {
+    // 点击菜单项即关闭卡片（无论弹窗结果如何，均不保持打开）
+    setMenuNoteId(null);
+    // 记录待删除笔记 → 弹出删除确认模态框
+    setDeleteTarget(note);
+  }, []);
+
+  // ── 删除确认：调用软删除，出错时以轻提示反馈 ─────────────
+  const handleDeleteConfirm = useCallback(
     async (note: NoteItem): Promise<void> => {
-      // 点击菜单项即关闭卡片（无论确认框结果如何，均不保持打开）
-      setMenuNoteId(null);
-      // 删除前确认（后端为软删除移入回收站；前端暂未提供恢复入口，故加确认兜底）
-      const confirmed = window.confirm(
-        `确定删除笔记「${note.title}」吗？删除后将移入回收站。`,
-      );
-      if (!confirmed) {
-        return;
-      }
+      setDeleteTarget(null);
       try {
         await deleteNote(note.id);
       } catch (err: unknown) {
         const message: string =
           err instanceof Error ? err.message : "删除笔记失败，请稍后重试";
-        window.alert(message);
+        showToast(message);
       }
     },
-    [deleteNote],
+    [deleteNote, showToast],
   );
 
-  // ── 重命名笔记（输入框预填当前标题，便于直接修改）──────────
-  const handleRenameNote = useCallback(
-    async (note: NoteItem): Promise<void> => {
-      // 点击菜单项即关闭卡片（与删除行为保持一致）
-      setMenuNoteId(null);
-      // 预填当前标题；取消或输入空白则不操作
-      const newTitle: string | null = window.prompt(
-        "请输入新的笔记标题",
-        note.title,
-      );
-      if (!newTitle || newTitle.trim().length === 0) {
-        return;
-      }
+  // ── 重命名笔记：打开输入弹窗，预填原标题，便于直接修改 ──
+  const handleRenameNote = useCallback((note: NoteItem): void => {
+    // 点击菜单项即关闭卡片（与删除行为保持一致）
+    setMenuNoteId(null);
+    // 打开输入弹窗（title=重命名笔记，预填当前标题）
+    setInputDialog({ mode: "rename", note });
+  }, []);
+
+  // ── 重命名确认：提交新标题，出错时以轻提示反馈 ───────────
+  const handleRenameConfirm = useCallback(
+    async (note: NoteItem, newTitle: string): Promise<void> => {
+      setInputDialog(null);
       try {
-        await renameNote(note.id, newTitle.trim());
+        await renameNote(note.id, newTitle);
       } catch (err: unknown) {
         const message: string =
           err instanceof Error ? err.message : "重命名笔记失败，请稍后重试";
-        window.alert(message);
+        showToast(message);
       }
     },
-    [renameNote],
+    [renameNote, showToast],
   );
 
-  // ── 新建笔记 ──────────────────────────────────────────────
-  const handleCreate = useCallback(async (): Promise<void> => {
-    const title: string | null = window.prompt("请输入笔记标题");
-    // 用户取消或输入空白 → 不做任何操作
-    if (!title || title.trim().length === 0) {
-      return;
-    }
+  // ── 新建笔记：打开输入弹窗（输入标题后确认创建）──────────
+  const handleCreate = useCallback((): void => {
+    setInputDialog({ mode: "create" });
+  }, []);
 
-    try {
-      const detail = await api.create(title.trim());
-      // 刷新列表并自动选中新建的笔记
-      await fetchNoteList();
-      await selectNote(detail.id);
-    } catch (err: unknown) {
-      const message: string =
-        err instanceof Error ? err.message : "新建笔记失败，请稍后重试";
-      window.alert(message);
-    }
-  }, [fetchNoteList, selectNote]);
+  // ── 新建确认：调用后端创建 → 刷新列表并自动选中新笔记 ───
+  const handleCreateConfirm = useCallback(
+    async (title: string): Promise<void> => {
+      setInputDialog(null);
+      try {
+        const detail = await api.create(title);
+        // 刷新列表并自动选中新建的笔记
+        await fetchNoteList();
+        await selectNote(detail.id);
+      } catch (err: unknown) {
+        const message: string =
+          err instanceof Error ? err.message : "新建笔记失败，请稍后重试";
+        showToast(message);
+      }
+    },
+    [fetchNoteList, selectNote, showToast],
+  );
 
   // ── 切换笔记 ──────────────────────────────────────────────
   const handleSelect = useCallback(
@@ -291,10 +307,10 @@ export default function Sidebar(): React.ReactElement {
       } catch (err: unknown) {
         const message: string =
           err instanceof Error ? err.message : "加载笔记失败，请稍后重试";
-        window.alert(message);
+        showToast(message);
       }
     },
-    [currentId, selectNote],
+    [currentId, selectNote, showToast],
   );
 
   return (
@@ -416,6 +432,34 @@ export default function Sidebar(): React.ReactElement {
           </ul>
         )}
       </nav>
+
+      {/* ── 新建 / 重命名输入弹窗（共用组件，仅标题与预填值不同）── */}
+      {inputDialog && (
+        <InputDialog
+          open
+          title={inputDialog.mode === "create" ? "新建笔记" : "重命名笔记"}
+          initialValue={
+            inputDialog.mode === "rename" ? inputDialog.note.title : ""
+          }
+          onClose={() => setInputDialog(null)}
+          onConfirm={(value) =>
+            inputDialog.mode === "create"
+              ? handleCreateConfirm(value)
+              : handleRenameConfirm(inputDialog.note, value)
+          }
+        />
+      )}
+
+      {/* ── 删除确认弹窗 ── */}
+      {deleteTarget && (
+        <ConfirmDialog
+          open
+          title="删除笔记"
+          message="确定要删除该笔记吗？删除后将置入回收站。"
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => handleDeleteConfirm(deleteTarget)}
+        />
+      )}
     </aside>
   );
 }

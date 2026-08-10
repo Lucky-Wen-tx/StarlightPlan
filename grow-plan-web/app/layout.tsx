@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
+import ToastContainer from "@/components/common/ToastContainer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -41,6 +42,8 @@ export default function RootLayout({
               {children}
             </main>
           </div>
+          {/* 全局轻提示容器：统一渲染 Toast 错误反馈 */}
+          <ToastContainer />
         </ThemeProvider>
       </body>
     </html>

@@ -15,6 +15,7 @@ import Image from "next/image";
 import { Upload, Download } from "lucide-react";
 import ThemeToggle from "@/components/common/ThemeToggle";
 import { useNoteStore } from "@/store/useNoteStore";
+import { useToastStore } from "@/store/useToastStore";
 import { importMarkdown } from "@/lib/api";
 import { buildPortableMarkdown } from "@/lib/exportMarkdown";
 
@@ -29,6 +30,7 @@ export default function Header(): React.ReactElement {
   const currentContent: string = useNoteStore((s) => s.currentContent);
   const fetchNoteList = useNoteStore((s) => s.fetchNoteList);
   const selectNote = useNoteStore((s) => s.selectNote);
+  const showToast = useToastStore((s) => s.showToast);
 
   /** 隐藏的文件选择器（点击导入按钮时触发） */
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,10 +59,10 @@ export default function Header(): React.ReactElement {
       } catch (err: unknown) {
         const message: string =
           err instanceof Error ? err.message : "导入失败，请稍后重试";
-        window.alert(message);
+        showToast(message);
       }
     },
-    [fetchNoteList, selectNote],
+    [fetchNoteList, selectNote, showToast],
   );
 
   // ── 导出：将当前笔记下载为 .md 文件（纯前端）──────────────
@@ -94,11 +96,11 @@ export default function Header(): React.ReactElement {
     } catch (err: unknown) {
       const message: string =
         err instanceof Error ? err.message : "导出失败，请稍后重试";
-      window.alert(message);
+      showToast(message);
     } finally {
       setIsExporting(false);
     }
-  }, [currentId, currentTitle, currentContent, isExporting]);
+  }, [currentId, currentTitle, currentContent, isExporting, showToast]);
 
   // 未选中笔记或正在导出时禁用导出按钮
   const exportDisabled: boolean = currentId === null || isExporting;
