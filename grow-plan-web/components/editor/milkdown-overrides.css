@@ -51,9 +51,18 @@
 }
 
 /* ── 3. 编辑区内边距：与 Vditor 一致的书写宽度 ─────────────── */
-/* Crepe 内容根节点为 .ProseMirror，设置左右留白让正文居中阅读 */
+/* Crepe 内容根节点为 .ProseMirror，设置左右留白让正文居中阅读；
+   追加 padding 过渡，配合大纲浮层滑入/滑出时正文安全区平滑迁移 */
 .milkdown .ProseMirror {
   padding: 30px 100px;
+  transition: padding 0.3s ease-in-out;
+}
+
+/* 大纲浮层展开时（.outline-open 由 MilkdownEditor 加到编辑区外层容器上）：
+   右侧留出安全区（200px 面板 + 48px 间距 = 248px），保证正文不被浮层遮挡；
+   编辑器容器本身保持全宽不挤压，正文只是让出右侧可视区域 */
+.outline-open .milkdown .ProseMirror {
+  padding: 30px 248px 30px 100px;
 }
 
 /* ── 4. 占位符样式：斜体弱化提示感（同 Vditor 版本）────────── */

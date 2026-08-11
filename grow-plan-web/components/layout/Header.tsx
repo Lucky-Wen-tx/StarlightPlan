@@ -12,9 +12,10 @@
  */
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
-import { Upload, Download } from "lucide-react";
+import { Upload, Download, ListTree } from "lucide-react";
 import ThemeToggle from "@/components/common/ThemeToggle";
 import { useNoteStore } from "@/store/useNoteStore";
+import { useUiStore } from "@/store/useUiStore";
 import { useToastStore } from "@/store/useToastStore";
 import { importMarkdown } from "@/lib/api";
 import { buildPortableMarkdown } from "@/lib/exportMarkdown";
@@ -31,6 +32,9 @@ export default function Header(): React.ReactElement {
   const fetchNoteList = useNoteStore((s) => s.fetchNoteList);
   const selectNote = useNoteStore((s) => s.selectNote);
   const showToast = useToastStore((s) => s.showToast);
+  // ── 大纲面板开关（编辑器右侧目录）────────────────────────
+  const outlineOpen: boolean = useUiStore((s) => s.outlineOpen);
+  const toggleOutline = useUiStore((s) => s.toggleOutline);
 
   /** 隐藏的文件选择器（点击导入按钮时触发） */
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,6 +108,8 @@ export default function Header(): React.ReactElement {
 
   // 未选中笔记或正在导出时禁用导出按钮
   const exportDisabled: boolean = currentId === null || isExporting;
+  // 未选中笔记时禁用大纲按钮（回收站视图会清空 currentId，同样禁用）
+  const outlineDisabled: boolean = currentId === null;
 
   return (
     <header className="h-12 shrink-0 flex items-center justify-between px-4 bg-white dark:bg-neutral-950 select-none relative z-10 after:absolute after:inset-x-0 after:top-full after:h-1 after:bg-gradient-to-b after:from-black/8 after:to-transparent dark:after:from-black/40">
@@ -169,6 +175,25 @@ export default function Header(): React.ReactElement {
         </button>
 
         <ThemeToggle />
+
+        {/* 大纲（目录）切换按钮：展开编辑器右侧大纲面板 */}
+        <button
+          type="button"
+          onClick={toggleOutline}
+          disabled={outlineDisabled}
+          aria-pressed={outlineOpen}
+          title={outlineDisabled ? "请先选择一篇笔记" : "切换目录大纲"}
+          aria-label="切换目录大纲"
+          className={`${ICON_BTN_CLASS} ${
+            outlineDisabled ? "opacity-40 cursor-not-allowed" : ""
+          } ${
+            outlineOpen
+              ? "text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800"
+              : ""
+          }`}
+        >
+          <ListTree size={18} />
+        </button>
       </div>
     </header>
   );

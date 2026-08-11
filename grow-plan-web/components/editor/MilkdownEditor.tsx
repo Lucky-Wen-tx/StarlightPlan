@@ -27,9 +27,11 @@ import "@milkdown/crepe/theme/frame.css";
 // 项目自定义样式覆写（必须排在官方 CSS 之后引入，确保覆盖生效）
 import "./milkdown-overrides.css";
 import { useNoteStore } from "@/store/useNoteStore";
+import { useUiStore } from "@/store/useUiStore";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { uploadImage } from "@/lib/api";
 import StatusBar from "@/components/editor/StatusBar";
+import OutlinePanel from "@/components/editor/OutlinePanel";
 
 /**
  * Milkdown 编辑器内部组件
@@ -46,9 +48,14 @@ function MilkdownEditor(): React.ReactElement {
   // ── 防抖自动保存（内容变更后 1 秒自动保存到后端）───────────
   useAutoSave(currentId, currentContent);
 
+  // ── 大纲面板开关 ─────────────────────────────────────────────
+  const outlineOpen: boolean = useUiStore((s) => s.outlineOpen);
+
   // ── Refs ────────────────────────────────────────────────────
   /** Crepe 实例引用（用于 replaceAll / setReadonly） */
   const crepeRef = useRef<Crepe | null>(null);
+  /** 编辑器滚动容器引用（供大纲面板定位标题时查询 DOM） */
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   /**
    * 加载内容中标记：防止 replaceAll 触发的 markdownUpdated 回调
    * 将加载内容误判为用户编辑。初始为 true，编辑器就绪后放开；
@@ -167,9 +174,16 @@ function MilkdownEditor(): React.ReactElement {
   // 注意：<Milkdown /> 必须始终渲染，useEditor 工厂依赖其挂载的容器
   return (
     <div className="h-full flex flex-col">
-      {/* 编辑器主体：外层滚动容器填充 flex-1 父元素，避免 h-full 依赖显式父高度 */}
-      <div className="flex-1 relative">
-        <div className="absolute inset-0 overflow-y-auto">
+      {/* 编辑器区域：大纲面板以浮层形式盖在编辑器右侧上方，
+          不挤压编辑器宽度（编辑器保持全宽）；overflow-hidden 裁剪
+          滑出动画期间越界的面板，避免出现横向滚动条 */}
+      <div
+        className={`flex-1 relative min-h-0 overflow-hidden ${
+          outlineOpen ? "outline-open" : ""
+        }`}
+      >
+        {/* 编辑器主体：外层滚动容器填充 flex-1 父元素，避免 h-full 依赖显式父高度 */}
+        <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto">
           <Milkdown />
         </div>
 
@@ -181,6 +195,14 @@ function MilkdownEditor(): React.ReactElement {
             </p>
           </div>
         )}
+
+        {/* 右侧大纲浮层：始终挂载以支持滑出动画，open 控制滑入/滑出；
+            key 绑定笔记 ID，切换笔记时重置面板内部滚动位置 */}
+        <OutlinePanel
+          key={currentId}
+          open={outlineOpen}
+          scrollContainerRef={scrollContainerRef}
+        />
       </div>
 
       {/* 底部状态栏 */}

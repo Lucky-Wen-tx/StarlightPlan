@@ -496,7 +496,7 @@ export default function Sidebar(): React.ReactElement {
           type="button"
           onClick={handleOpenRecycle}
           title="打开回收站"
-          className="shrink-0 flex items-center gap-2 px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 cursor-pointer transition-colors text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200"
+          className="shrink-0 flex items-center justify-center gap-2 px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 cursor-pointer transition-colors text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200"
         >
           <Trash2 size={15} className="shrink-0" />
           回收站
