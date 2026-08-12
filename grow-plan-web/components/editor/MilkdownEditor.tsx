@@ -6,7 +6,8 @@
  * 核心职责（替代原 VditorEditor）：
  * 1. 通过 @milkdown/react 的 useEditor 初始化 Crepe 实例（WYSIWYG，全功能）
  * 2. markdownUpdated 监听中直接获取 Markdown → 同步到 zustand store
- * 3. 切换笔记时通过 replaceAll 加载新内容（对应 Vditor 的 setValue）
+ * 3. 切换笔记时由父组件以 key={currentId} 重挂载本组件，初始内容经 defaultValue 注入
+ *    （不再使用 replaceAll：其与块手柄 plugin-block 的陈旧 position 叠加会抛 RangeError）
  * 4. 通过 useAutoSave 钩子实现防抖自动保存（逻辑未变）
  * 5. 可编辑状态通过 Crepe.setReadonly 控制（对应 Vditor 的 enable/disabled）
  * 6. 主题跟随应用 ThemeProvider —— 纯 CSS 变量驱动，无需 JS 同步
@@ -19,7 +20,6 @@
 import { useEffect, useRef } from "react";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { Crepe } from "@milkdown/crepe";
-import { replaceAll } from "@milkdown/kit/utils";
 // Milkdown 主题样式：common 为基础组件样式聚合，frame 为亮色主题
 // 暗色模式通过 milkdown-overrides.css 的 .dark .milkdown 变量覆盖实现
 import "@milkdown/crepe/theme/common/style.css";
@@ -52,20 +52,18 @@ function MilkdownEditor(): React.ReactElement {
   const outlineOpen: boolean = useUiStore((s) => s.outlineOpen);
 
   // ── Refs ────────────────────────────────────────────────────
-  /** Crepe 实例引用（用于 replaceAll / setReadonly） */
+  /** Crepe 实例引用（用于 setReadonly） */
   const crepeRef = useRef<Crepe | null>(null);
   /** 编辑器滚动容器引用（供大纲面板定位标题时查询 DOM） */
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   /**
-   * 加载内容中标记：防止 replaceAll 触发的 markdownUpdated 回调
-   * 将加载内容误判为用户编辑。初始为 true，编辑器就绪后放开；
-   * 切换笔记期间再次置为 true（与 Vditor 版本的守卫逻辑一致）。
+   * 加载内容中标记：初始内容经 defaultValue 注入，初始化期间可能触发
+   * markdownUpdated 回调，用该标记防止把加载内容误判为用户编辑。
+   * 初始为 true，编辑器就绪后放开。
    */
   const isLoadingRef = useRef<boolean>(true);
   /** 首挂载时的初始内容：作为 Crepe 的 defaultValue */
   const initialContentRef = useRef<string>(currentContent);
-  /** 上一次渲染时的笔记 ID，用于检测笔记切换 */
-  const prevNoteIdRef = useRef<string | null>(currentId);
 
   // ═══════════════════════════════════════════════════════════════
   // 初始化 Crepe 编辑器
@@ -124,39 +122,6 @@ function MilkdownEditor(): React.ReactElement {
       isLoadingRef.current = false;
     }
   }, [loading]);
-
-  // ═══════════════════════════════════════════════════════════════
-  // Effect：切换笔记时加载 Markdown 内容
-  // ═══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    const crepe: Crepe | null = crepeRef.current;
-
-    // 编辑器尚未就绪 / 无笔记选中 → 跳过
-    if (!crepe || !editorReady || currentId === null) {
-      return;
-    }
-
-    // 同一篇笔记（未发生切换）→ 跳过，避免重复加载
-    if (prevNoteIdRef.current === currentId) {
-      return;
-    }
-
-    // 记录新笔记 ID
-    prevNoteIdRef.current = currentId;
-
-    // replaceAll 会触发 markdownUpdated，用 isLoadingRef 屏蔽误回写
-    isLoadingRef.current = true;
-    try {
-      crepe.editor.action(replaceAll(currentContent));
-    } catch (err: unknown) {
-      console.error("[MilkdownEditor] 切换笔记加载内容失败:", err);
-    } finally {
-      // 使用微任务延迟重置，确保任何异步回调都在守卫期间执行
-      Promise.resolve().then((): void => {
-        isLoadingRef.current = false;
-      });
-    }
-  }, [currentId, currentContent, editorReady]);
 
   // ═══════════════════════════════════════════════════════════════
   // Effect：同步可编辑状态

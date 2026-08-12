@@ -93,7 +93,7 @@ export default function StatusBar(): React.ReactElement | null {
   }
 
   return (
-    <div className="shrink-0 flex items-center justify-between px-6 py-2 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-[13px] text-neutral-400 dark:text-neutral-500 select-none">
+    <div className="shrink-0 flex items-center justify-between px-6 py-1 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-[13px] text-neutral-400 dark:text-neutral-500 select-none">
       {/* 左侧：字数统计 */}
       <div className="flex items-center gap-4">
         <span>{wordCount} 字</span>

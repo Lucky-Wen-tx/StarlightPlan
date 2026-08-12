@@ -73,5 +73,8 @@ export default function Home(): React.ReactElement {
   if (!currentId) {
     return <Welcome />;
   }
-  return <MilkdownEditor />;
+  // key 绑定笔记 ID：切换笔记时强制重挂载编辑器，内容经 defaultValue 注入。
+  // 避免在单实例上执行 replaceAll 时，块手柄(plugin-block)缓存的上篇笔记
+  // position 在新文档上越界，引发 "Position N out of range" 运行时崩溃。
+  return <MilkdownEditor key={currentId} />;
 }

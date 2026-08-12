@@ -95,3 +95,42 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #737373; /* neutral-500 */
 }
+
+/* ── 大纲面板专用滚动条（比全局 7px 更细）──────────────────── */
+/* 大纲面板仅 200px 宽，全局 7px 滚动条视觉偏粗，这里收窄为 4px；
+   同时提供标准属性 scrollbar-width/scrollbar-color 作为 Firefox 兜底 */
+.outline-nav-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent; /* neutral-300 */
+}
+
+.outline-nav-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.outline-nav-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.outline-nav-scrollbar::-webkit-scrollbar-thumb {
+  background: #d4d4d4; /* neutral-300 */
+  border-radius: 4px;
+}
+
+.outline-nav-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3; /* neutral-400 */
+}
+
+/* 深色主题 */
+.dark .outline-nav-scrollbar {
+  scrollbar-color: #525252 transparent; /* neutral-600 */
+}
+
+.dark .outline-nav-scrollbar::-webkit-scrollbar-thumb {
+  background: #525252; /* neutral-600 */
+}
+
+.dark .outline-nav-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #737373; /* neutral-500 */
+}

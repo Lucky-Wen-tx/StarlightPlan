@@ -123,7 +123,8 @@ export default function OutlinePanel({
         </div>
       ) : (
         /* 标题列表：按级别缩进，点击平滑定位 */
-        <nav className="flex-1 overflow-y-auto py-2">
+        /* outline-nav-scrollbar：收窄滚动条（面板仅 200px 宽，默认 7px 偏粗），样式见 globals.css */
+        <nav className="outline-nav-scrollbar flex-1 overflow-y-auto py-2">
           {items.map((item, index) => (
             <button
               key={`${item.level}-${item.text}-${index}`}
@@ -131,7 +132,7 @@ export default function OutlinePanel({
               onClick={() => handleScrollTo(index)}
               title={item.text}
               className="block w-full truncate px-2 py-1 text-[13px] leading-5 text-left text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              style={{ paddingLeft: (item.level - 1) * 12 }}
+              style={{ paddingLeft: 4 + (item.level - 1) * 12 }}
             >
               {item.text}
             </button>
