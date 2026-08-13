@@ -548,7 +548,8 @@ export default function Sidebar(): React.ReactElement {
           <div className="space-y-1">
             {showPinned && (
               <section className="pt-2">
-                <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                <h3 className="px-3 pb-1 flex items-center gap-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                  <Pin size={12} className="shrink-0" />
                   置顶
                 </h3>
                 <ul className="space-y-1">{pinned.map(renderNote)}</ul>
