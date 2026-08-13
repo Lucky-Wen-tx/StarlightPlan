@@ -78,6 +78,11 @@ export function useAutoSave(
           // 使用后端返回的文件修改时间（直接读取 .md 文件 mtime）
           useNoteStore.getState().setLastSavedAt(result.updated_at);
         }
+        // 静默刷新笔记列表，让「最近编辑」分区按最新 updated_at 重排
+        // （自动保存不主动刷新列表，若不刷新区分排序会滞后）
+        void useNoteStore.getState().fetchNoteList().catch(() => {
+          // 刷新失败静默处理，不影响保存流程；下次操作会自然纠正
+        });
       } catch (err: unknown) {
         // 自动保存失败静默处理 —— 避免频繁弹窗打扰用户
         // 下次变更时定时器会重新触发保存

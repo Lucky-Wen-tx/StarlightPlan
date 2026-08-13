@@ -94,6 +94,7 @@ class NoteSummary(BaseModel):
     title: str = Field(description="笔记显示标题（取自文件内一级标题或文件名）")
     created_at: datetime = Field(description="文件创建时间")
     updated_at: datetime = Field(description="文件最后修改时间")
+    is_pinned: bool = Field(default=False, description="是否置顶（置顶笔记在侧边栏置顶区展示）")
 
 
 class NoteDetail(NoteSummary):

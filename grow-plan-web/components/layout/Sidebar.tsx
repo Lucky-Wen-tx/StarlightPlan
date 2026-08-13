@@ -6,7 +6,15 @@
  * - 下方：笔记列表（从 store 读取，点击切换当前笔记，高亮选中项；三点菜单支持重命名/删除，均走自定义模态框）
  */
 import { useEffect, useCallback, useState, useMemo, useRef, useLayoutEffect } from "react";
-import { PenLine, FileText, Search, Ellipsis, Trash2 } from "lucide-react";
+import {
+  PenLine,
+  FileText,
+  Search,
+  Ellipsis,
+  Trash2,
+  Pin,
+  PinOff,
+} from "lucide-react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { useRecycleStore } from "@/store/useRecycleStore";
 import { useToastStore } from "@/store/useToastStore";
@@ -31,6 +39,7 @@ function NoteContextMenu({
   anchorRef,
   note,
   onClose,
+  onTogglePin,
   onRename,
   onDelete,
 }: {
@@ -40,6 +49,8 @@ function NoteContextMenu({
   note: NoteItem;
   /** 关闭菜单回调 */
   onClose: () => void;
+  /** 点击「置顶/取消置顶」后的回调（父组件内部已含关闭卡片逻辑） */
+  onTogglePin: (note: NoteItem) => void;
   /** 点击「重命名」后的回调（父组件内部已含关闭卡片逻辑） */
   onRename: (note: NoteItem) => void;
   /** 点击「删除」后的回调（父组件内部已含关闭卡片逻辑） */
@@ -139,6 +150,21 @@ function NoteContextMenu({
       // 白底 / 8px 圆角 / 无边框 / 多层柔和悬浮阴影
       className="rounded-lg bg-white dark:bg-neutral-800 p-1 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_8px_rgba(0,0,0,0.04),0_10px_20px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.25),0_12px_24px_-6px_rgba(0,0,0,0.4)]"
     >
+      {/* 置顶 / 取消置顶：图标在左、文字在右；hover 圆角浅灰高亮（无尖角） */}
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => onTogglePin(note)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition-colors text-neutral-700 dark:text-neutral-200 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700/60"
+      >
+        {note.is_pinned ? (
+          <PinOff size={15} className="shrink-0" />
+        ) : (
+          <Pin size={15} className="shrink-0" />
+        )}
+        {note.is_pinned ? "取消置顶" : "置顶"}
+      </button>
+
       {/* 重命名：图标在左、文字在右；hover 圆角浅灰高亮（无尖角） */}
       <button
         type="button"
@@ -172,6 +198,7 @@ export default function Sidebar(): React.ReactElement {
   const selectNote = useNoteStore((s) => s.selectNote);
   const deleteNote = useNoteStore((s) => s.deleteNote);
   const renameNote = useNoteStore((s) => s.renameNote);
+  const togglePin = useNoteStore((s) => s.togglePin);
   const showToast = useToastStore((s) => s.showToast);
 
   // ── 回收站视图状态 ────────────────────────────────────────
@@ -181,20 +208,47 @@ export default function Sidebar(): React.ReactElement {
   // ── 搜索状态 ──────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  /** 是否处于搜索状态（有非空关键词） */
+  const isSearching = searchQuery.trim().length > 0;
+
   // ── 前端实时过滤：按标题模糊匹配 ──────────────────────────
   const filteredList = useMemo<NoteItem[]>(() => {
-    if (!searchQuery.trim()) {
+    if (!isSearching) {
       return noteList;
     }
     const keyword = searchQuery.trim().toLowerCase();
     return noteList.filter((note) =>
       note.title.toLowerCase().includes(keyword),
     );
-  }, [noteList, searchQuery]);
+  }, [noteList, searchQuery, isSearching]);
+
+  // ── 三区分组：置顶 / 最近编辑（前 6 篇非置顶）/ 其它 ──────
+  const { pinned, recent, rest } = useMemo(() => {
+    // 显式按修改时间倒序排序（防御自动保存后本地列表短暂乱序）
+    const sorted: NoteItem[] = [...noteList].sort((a, b) =>
+      b.updated_at.localeCompare(a.updated_at),
+    );
+    const pinned: NoteItem[] = [];
+    const unpinned: NoteItem[] = [];
+    for (const note of sorted) {
+      (note.is_pinned ? pinned : unpinned).push(note);
+    }
+    return { pinned, recent: unpinned.slice(0, 6), rest: unpinned.slice(6) };
+  }, [noteList]);
+
+  // 分区标题仅在该分区有意义（非全列表单一分区）时展示，避免小列表出现多余的「其它」标题
+  const showPinned = pinned.length > 0;
+  const showRecent = recent.length > 0 && (pinned.length > 0 || rest.length > 0);
+  const showRest = rest.length > 0 && (pinned.length > 0 || recent.length > 0);
 
   // ── 笔记操作菜单状态 ────────────────────────────────────────
   /** 当前展开操作菜单的笔记 ID，null 表示无菜单打开 */
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
+  /**
+   * 当前鼠标悬停在三点按钮上的笔记 ID，null 表示未悬停。
+   * 用于置顶笔记的图标切换：行 hover 显示 Pin，悬停到按钮上才显示三点菜单图标。
+   */
+  const [hoverBtnNoteId, setHoverBtnNoteId] = useState<string | null>(null);
   /** 三点按钮 DOM 引用：菜单 fixed 定位时读取锚点屏幕坐标 */
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -280,6 +334,23 @@ export default function Sidebar(): React.ReactElement {
     [renameNote, showToast],
   );
 
+  // ── 置顶 / 取消置顶：切换成功无需提示，失败以轻提示反馈 ──
+  const handleTogglePin = useCallback(
+    async (note: NoteItem): Promise<void> => {
+      // 点击菜单项即关闭卡片（与重命名/删除行为保持一致）
+      setMenuNoteId(null);
+      try {
+        await togglePin(note.id);
+        // 需求：置顶切换成功无需 toast
+      } catch (err: unknown) {
+        const message: string =
+          err instanceof Error ? err.message : "置顶操作失败，请稍后重试";
+        showToast(message);
+      }
+    },
+    [togglePin, showToast],
+  );
+
   // ── 新建笔记：打开输入弹窗（输入标题后确认创建）──────────
   const handleCreate = useCallback((): void => {
     setInputDialog({ mode: "create" });
@@ -335,6 +406,89 @@ export default function Sidebar(): React.ReactElement {
     });
   }, [enterRecycle, showToast]);
 
+  // ── 渲染单条笔记列表项（搜索扁平列表与三个分区复用）───────
+  const renderNote = (note: NoteItem): React.ReactElement => {
+    const isActive: boolean = note.id === currentId;
+    const isMenuOpen: boolean = menuNoteId === note.id;
+    /** 鼠标是否悬停在三点按钮上（置顶笔记用于 Pin/三点图标切换） */
+    const isBtnHovered: boolean = hoverBtnNoteId === note.id;
+    /** 是否显示 Pin 图标：置顶笔记、菜单未展开、且未悬停在按钮上 */
+    const showPinIcon: boolean = note.is_pinned && !isMenuOpen && !isBtnHovered;
+    return (
+      <li key={note.id} className="group relative">
+        {/* 条目容器：整行 hover 时显示右侧三点按钮；高亮/选中样式与原先一致 */}
+        <div
+          className={`flex items-center rounded-xl transition-all ${
+            isActive
+              ? "bg-neutral-100 dark:bg-neutral-800"
+              : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          }`}
+        >
+          {/* 主点击区：点击选择/切换笔记 */}
+          <button
+            type="button"
+            onClick={() => handleSelect(note.id)}
+            className="flex-1 min-w-0 flex items-center gap-2 px-4 py-2.5 text-left cursor-pointer font-normal"
+          >
+            <FileText
+              size={14}
+              className={`shrink-0 ${
+                isActive
+                  ? "text-neutral-700 dark:text-neutral-300"
+                  : "text-neutral-400 dark:text-neutral-500"
+              }`}
+            />
+            <span
+              className={`text-[15px] truncate ${
+                isActive
+                  ? "text-neutral-800 dark:text-neutral-200 font-bold"
+                  : "text-neutral-700 dark:text-neutral-300"
+              }`}
+            >
+              {note.title}
+            </span>
+          </button>
+
+          {/* 三点操作按钮：默认隐藏，hover 整行显示；菜单展开期间常显。
+              置顶笔记：行 hover 时先显示 Pin 图标，鼠标滑到按钮位置时再切换为三点菜单图标。
+              同一时间只渲染一个图标（用 hoverBtnNoteId 状态控制），避免图标重叠 */}
+          <button
+            type="button"
+            onClick={(e) => handleToggleMenu(e, note.id)}
+            onMouseEnter={() => setHoverBtnNoteId(note.id)}
+            onMouseLeave={() => setHoverBtnNoteId(null)}
+            title="笔记操作"
+            aria-label={`${note.title} 的操作菜单`}
+            aria-expanded={isMenuOpen}
+            className={`mr-1.5 shrink-0 p-1 rounded-md text-neutral-400 dark:text-neutral-500 cursor-pointer transition-all duration-150 ${
+              isMenuOpen
+                ? "opacity-100 bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300"
+                : "opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-600 dark:hover:text-neutral-300"
+            }`}
+          >
+            {showPinIcon ? (
+              <Pin size={15} />
+            ) : (
+              <Ellipsis size={15} />
+            )}
+          </button>
+        </div>
+
+        {/* 悬浮操作菜单卡片（仅当前行打开时渲染） */}
+        {isMenuOpen && (
+          <NoteContextMenu
+            anchorRef={moreButtonRef}
+            note={note}
+            onClose={handleCloseMenu}
+            onTogglePin={handleTogglePin}
+            onRename={handleRenameNote}
+            onDelete={handleDeleteNote}
+          />
+        )}
+      </li>
+    );
+  };
+
   return (
     <aside className="w-64 shrink-0 flex flex-col border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
       {/* ── 回收站视图：整体替换为回收站面板 ───────────────── */}
@@ -381,82 +535,42 @@ export default function Sidebar(): React.ReactElement {
           <p className="py-8 text-center text-base text-neutral-400 dark:text-neutral-500">
             暂无笔记，点击上方按钮创建
           </p>
-        ) : filteredList.length === 0 ? (
+        ) : isSearching && filteredList.length === 0 ? (
           /* 空状态：搜索无结果 */
           <p className="py-8 text-center text-base text-neutral-400 dark:text-neutral-500">
             未找到匹配的笔记
           </p>
+        ) : isSearching ? (
+          /* 搜索态：扁平匹配列表，不做分区；置顶笔记保留 Pin 小图标提示 */
+          <ul className="space-y-1">{filteredList.map(renderNote)}</ul>
         ) : (
-          <ul className="space-y-1">
-            {filteredList.map((note: NoteItem) => {
-              const isActive: boolean = note.id === currentId;
-              const isMenuOpen: boolean = menuNoteId === note.id;
-              return (
-                <li key={note.id} className="group relative">
-                  {/* 条目容器：整行 hover 时显示右侧三点按钮；高亮/选中样式与原先一致 */}
-                  <div
-                    className={`flex items-center rounded-xl transition-all ${
-                      isActive
-                        ? "bg-neutral-100 dark:bg-neutral-800"
-                        : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                    }`}
-                  >
-                    {/* 主点击区：点击选择/切换笔记 */}
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(note.id)}
-                      className="flex-1 min-w-0 flex items-center gap-2 px-4 py-2.5 text-left cursor-pointer font-normal"
-                    >
-                      <FileText
-                        size={14}
-                        className={`shrink-0 ${
-                          isActive
-                            ? "text-neutral-700 dark:text-neutral-300"
-                            : "text-neutral-400 dark:text-neutral-500"
-                        }`}
-                      />
-                      <span
-                        className={`text-[15px] truncate ${
-                          isActive
-                            ? "text-neutral-800 dark:text-neutral-200 font-bold"
-                            : "text-neutral-700 dark:text-neutral-300"
-                        }`}
-                      >
-                        {note.title}
-                      </span>
-                    </button>
-
-                    {/* 三点操作按钮：默认隐藏，hover 整行显示；菜单展开期间常显 */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleMenu(e, note.id)}
-                      title="笔记操作"
-                      aria-label={`${note.title} 的操作菜单`}
-                      aria-expanded={isMenuOpen}
-                      className={`mr-1.5 shrink-0 p-1 rounded-md text-neutral-400 dark:text-neutral-500 cursor-pointer transition-all duration-150 ${
-                        isMenuOpen
-                          ? "opacity-100 bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300"
-                          : "opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-600 dark:hover:text-neutral-300"
-                      }`}
-                    >
-                      <Ellipsis size={15} />
-                    </button>
-                  </div>
-
-                  {/* 悬浮操作菜单卡片（仅当前行打开时渲染） */}
-                  {isMenuOpen && (
-                    <NoteContextMenu
-                      anchorRef={moreButtonRef}
-                      note={note}
-                      onClose={handleCloseMenu}
-                      onRename={handleRenameNote}
-                      onDelete={handleDeleteNote}
-                    />
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          /* 常态：按 置顶 / 最近编辑 / 其它 三区分组展示 */
+          <div className="space-y-1">
+            {showPinned && (
+              <section className="pt-2">
+                <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                  置顶
+                </h3>
+                <ul className="space-y-1">{pinned.map(renderNote)}</ul>
+              </section>
+            )}
+            {showRecent && (
+              <section className="pt-2">
+                <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                  最近编辑
+                </h3>
+                <ul className="space-y-1">{recent.map(renderNote)}</ul>
+              </section>
+            )}
+            {showRest && (
+              <section className="pt-2">
+                <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                  其它
+                </h3>
+                <ul className="space-y-1">{rest.map(renderNote)}</ul>
+              </section>
+            )}
+          </div>
         )}
       </nav>
 

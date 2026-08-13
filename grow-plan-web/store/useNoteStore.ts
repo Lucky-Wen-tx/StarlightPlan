@@ -52,6 +52,13 @@ interface NoteStore {
    * 3. 若重命名的是当前打开的笔记，同步 currentId / currentTitle 到新 id 与新标题
    */
   renameNote: (oldId: string, newTitle: string) => Promise<void>;
+  /**
+   * 置顶 / 取消置顶一篇笔记：
+   * 1. 乐观更新：立即翻转本地 is_pinned，界面无延迟反馈
+   * 2. 调用后端置顶/取消接口
+   * 3. 失败时刷新列表回滚为服务器真实状态，并抛出错误让调用方提示
+   */
+  togglePin: (id: string) => Promise<void>;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -131,6 +138,45 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
       });
     } else {
       set({ noteList: list });
+    }
+  },
+
+  togglePin: async (id: string): Promise<void> => {
+    const state = get();
+    const note = state.noteList.find((n) => n.id === id);
+    if (!note) {
+      return;
+    }
+    const nextPinned: boolean = !note.is_pinned;
+    // 1. 乐观更新：立即翻转本地状态，让界面无延迟反馈
+    set({
+      noteList: state.noteList.map((n) =>
+        n.id === id ? { ...n, is_pinned: nextPinned } : n,
+      ),
+    });
+    try {
+      // 2. 调用后端置顶 / 取消置顶接口（幂等）
+      if (nextPinned) {
+        await api.pinNote(id);
+      } else {
+        await api.unpinNote(id);
+      }
+    } catch (err: unknown) {
+      // 3. 失败：刷新列表回滚为服务器真实状态，再抛出让调用方提示
+      try {
+        const list: NoteItem[] = await api.getList();
+        set({ noteList: list });
+      } catch {
+        // 回滚刷新失败则忽略，下次刷新列表自然纠正
+      }
+      throw err;
+    }
+    // 成功：与后端对齐（确保 updated_at 等字段最新）
+    try {
+      const list: NoteItem[] = await api.getList();
+      set({ noteList: list });
+    } catch {
+      // 对齐失败忽略，乐观更新的状态已正确
     }
   },
 }));

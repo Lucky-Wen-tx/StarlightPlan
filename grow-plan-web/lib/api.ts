@@ -116,6 +116,34 @@ export async function remove(noteId: string): Promise<{ message: string }> {
   );
 }
 
+/**
+ * 置顶一篇笔记（幂等）
+ * PUT /api/notes/{noteId}/pin
+ *
+ * @param noteId - 笔记唯一标识
+ * @returns 更新后的笔记摘要（含 is_pinned 状态）
+ */
+export async function pinNote(noteId: string): Promise<NoteItem> {
+  return request<NoteItem>(
+    `${BASE_URL}/notes/${encodeURIComponent(noteId)}/pin`,
+    { method: "PUT" },
+  );
+}
+
+/**
+ * 取消置顶一篇笔记（幂等）
+ * DELETE /api/notes/{noteId}/pin
+ *
+ * @param noteId - 笔记唯一标识
+ * @returns 更新后的笔记摘要（含 is_pinned 状态）
+ */
+export async function unpinNote(noteId: string): Promise<NoteItem> {
+  return request<NoteItem>(
+    `${BASE_URL}/notes/${encodeURIComponent(noteId)}/pin`,
+    { method: "DELETE" },
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 回收站接口
 // ═══════════════════════════════════════════════════════════════

@@ -10,10 +10,12 @@
 import os
 import re
 import shutil
+import threading
+import json
 import uuid
 from datetime import datetime
 
-from config import NOTES_ROOT, RECYCLE_DIR, ASSETS_DIR
+from config import NOTES_ROOT, RECYCLE_DIR, ASSETS_DIR, PINNED_FILE
 from schemas import NoteCreate, NoteUpdate, NoteSummary, NoteDetail
 
 # ── 常量 ──────────────────────────────────────────────────
@@ -202,6 +204,79 @@ def _strip_first_heading(text: str) -> str:
     return text
 
 
+# ═══════════════════════════════════════════════════════════
+# 置顶状态存储
+# ═══════════════════════════════════════════════════════════
+# 置顶状态持久化到 notes/.pinned.json（格式 {"pinned_ids": [...]}）。
+# - 原子写入：先写 .tmp 再 os.replace 替换，防止写一半崩溃损坏文件
+# - 并发安全：模块级 threading.Lock 包裹 read-modify-write（单进程 uvicorn 足够）
+# - 容错：文件缺失或损坏时返回空集合，不导致服务崩溃
+
+_PIN_LOCK = threading.Lock()
+
+
+def _load_pinned_ids() -> set[str]:
+    """读取置顶笔记 ID 集合；文件缺失或损坏时返回空集合"""
+    if not os.path.isfile(PINNED_FILE):
+        return set()
+    try:
+        with open(PINNED_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        ids = data.get("pinned_ids", []) if isinstance(data, dict) else data
+        return set(ids) if isinstance(ids, list) else set()
+    except (OSError, ValueError):
+        # 文件损坏等异常 → 视为无置顶，避免服务崩溃
+        return set()
+
+
+def _write_pinned_ids(ids: set[str]) -> None:
+    """原子写入置顶 ID 集合（临时文件 + os.replace 替换）"""
+    tmp = PINNED_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"pinned_ids": sorted(ids)}, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, PINNED_FILE)
+
+
+def set_note_pinned(note_id: str, pinned: bool) -> NoteSummary:
+    """
+    置顶 / 取消置顶（幂等）。
+    笔记不存在时抛 FileNotFoundError；返回更新后的笔记摘要。
+    """
+    file_path = _resolve_safe_path(NOTES_ROOT, f"{note_id}.md")
+    if not os.path.isfile(file_path):
+        raise FileNotFoundError(f"笔记不存在: {note_id}")
+    with _PIN_LOCK:
+        ids = _load_pinned_ids()
+        changed = (pinned and note_id not in ids) or (not pinned and note_id in ids)
+        if changed:
+            if pinned:
+                ids.add(note_id)
+            else:
+                ids.discard(note_id)
+            _write_pinned_ids(ids)
+    return _build_note_summary(file_path, ids)
+
+
+def _move_pinned_id(old_id: str, new_id: str) -> None:
+    """重命名导致 ID 变化时迁移置顶状态（幂等；未置顶则无操作）"""
+    with _PIN_LOCK:
+        ids = _load_pinned_ids()
+        if old_id not in ids:
+            return
+        ids.discard(old_id)
+        ids.add(new_id)
+        _write_pinned_ids(ids)
+
+
+def _remove_pinned_id(note_id: str) -> None:
+    """删除笔记时清理置顶记录（幂等）"""
+    with _PIN_LOCK:
+        ids = _load_pinned_ids()
+        if note_id in ids:
+            ids.discard(note_id)
+            _write_pinned_ids(ids)
+
+
 def _build_note_detail(note_id: str, file_path: str, content: str) -> NoteDetail:
     """
     构建 NoteDetail 响应。
@@ -214,16 +289,19 @@ def _build_note_detail(note_id: str, file_path: str, content: str) -> NoteDetail
         id=note_id,
         title=title,
         content=body,
+        is_pinned=note_id in _load_pinned_ids(),
         **meta,
     )
 
 
-def _build_note_summary(file_path: str) -> NoteSummary:
+def _build_note_summary(file_path: str, pinned_ids: set[str] | None = None) -> NoteSummary:
     """构建 NoteSummary 响应的辅助函数"""
     note_id = os.path.splitext(os.path.basename(file_path))[0]
     meta = _read_file_metadata(file_path)
     title = _extract_title(file_path, note_id)
-    return NoteSummary(id=note_id, title=title, **meta)
+    if pinned_ids is None:
+        pinned_ids = _load_pinned_ids()
+    return NoteSummary(id=note_id, title=title, is_pinned=note_id in pinned_ids, **meta)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -241,6 +319,8 @@ def list_notes() -> list[NoteSummary]:
     if not os.path.isdir(NOTES_ROOT):
         return notes
 
+    # 一次性读取置顶集合，避免每个文件重复读 pinned.json
+    pinned_ids = _load_pinned_ids()
     for entry in sorted(os.listdir(NOTES_ROOT)):
         # 只处理 .md 文件，跳过隐藏文件和子目录
         if not entry.endswith(".md") or entry.startswith("."):
@@ -248,7 +328,7 @@ def list_notes() -> list[NoteSummary]:
         file_path = os.path.join(NOTES_ROOT, entry)
         if not os.path.isfile(file_path):
             continue
-        notes.append(_build_note_summary(file_path))
+        notes.append(_build_note_summary(file_path, pinned_ids))
 
     # 按修改时间倒序（最新的在前）
     notes.sort(key=lambda n: n.updated_at, reverse=True)
@@ -383,6 +463,10 @@ def update_note(note_id: str, data: NoteUpdate) -> NoteDetail:
             f.write(new_full_content)
         file_path = old_path
 
+    # 重命名导致 ID 变化 → 迁移置顶状态（new_id 此时已是最终值，含冲突后缀）
+    if new_id != note_id:
+        _move_pinned_id(note_id, new_id)
+
     return _build_note_detail(new_id, file_path, new_full_content)
 
 
@@ -416,6 +500,9 @@ def delete_note(note_id: str) -> None:
     # 记录删除时间：将回收站文件的修改时间重置为当前时间，
     # 使回收站列表的 updated_at 字段能准确反映"删除于"时间
     os.utime(dest)
+
+    # 删除后清理置顶记录（笔记移入回收站，不再属于置顶）
+    _remove_pinned_id(note_id)
 
 
 def list_recycle() -> list[NoteSummary]:
@@ -491,6 +578,8 @@ def permanent_delete(note_id: str) -> None:
     """
     file_path = _find_in_recycle(note_id)
     os.remove(file_path)
+    # 防御性清理：确保彻底删除后不残留置顶记录
+    _remove_pinned_id(note_id)
 
 
 # ═══════════════════════════════════════════════════════════

@@ -16,6 +16,10 @@ RECYCLE_DIR = os.path.join(NOTES_ROOT, ".recycle")
 # 资源目录：上传的图片等静态资源存储在此
 ASSETS_DIR = os.path.join(NOTES_ROOT, "assets")
 
+# 置顶状态文件：记录被置顶的笔记 ID 列表
+# 以 . 开头命名，list_notes 扫描时天然忽略，不会被当作笔记
+PINNED_FILE = os.path.join(NOTES_ROOT, ".pinned.json")
+
 # ── 服务配置 ──────────────────────────────────────────────
 # FastAPI 服务监听端口
 PORT = 8000

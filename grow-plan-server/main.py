@@ -108,6 +108,28 @@ async def delete_note(note_id: str):
         raise HTTPException(status_code=403, detail=str(e))
 
 
+@app.put("/api/notes/{note_id}/pin")
+async def pin_note(note_id: str):
+    """置顶一篇笔记（幂等）"""
+    try:
+        return note_service.set_note_pinned(note_id, True)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
+@app.delete("/api/notes/{note_id}/pin")
+async def unpin_note(note_id: str):
+    """取消置顶一篇笔记（幂等）"""
+    try:
+        return note_service.set_note_pinned(note_id, False)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
 # ═══════════════════════════════════════════════════════════
 # 回收站接口
 # ═══════════════════════════════════════════════════════════

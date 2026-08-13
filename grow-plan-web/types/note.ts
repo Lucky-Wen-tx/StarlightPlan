@@ -19,6 +19,8 @@ export interface NoteItem {
   created_at: string;
   /** 文件最后修改时间（ISO 8601 字符串） */
   updated_at: string;
+  /** 是否置顶（置顶笔记在侧边栏置顶区展示） */
+  is_pinned: boolean;
 }
 
 // ── 笔记详情（对应后端 NoteDetail，继承 NoteSummary）───────────
@@ -39,4 +41,6 @@ export interface NoteUpdateResult {
   created_at: string;
   /** 文件最后修改时间（ISO 8601 字符串） */
   updated_at: string;
+  /** 是否置顶 */
+  is_pinned: boolean;
 }
