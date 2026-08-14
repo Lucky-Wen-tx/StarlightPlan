@@ -199,6 +199,8 @@ export default function Sidebar(): React.ReactElement {
   const deleteNote = useNoteStore((s) => s.deleteNote);
   const renameNote = useNoteStore((s) => s.renameNote);
   const togglePin = useNoteStore((s) => s.togglePin);
+  /** 最近编辑分区的 7 天窗口截止时间戳（由 store 在拉取列表时刷新） */
+  const recentCutoffMs = useNoteStore((s) => s.recentCutoffMs);
   const showToast = useToastStore((s) => s.showToast);
 
   // ── 回收站视图状态 ────────────────────────────────────────
@@ -222,7 +224,7 @@ export default function Sidebar(): React.ReactElement {
     );
   }, [noteList, searchQuery, isSearching]);
 
-  // ── 三区分组：置顶 / 最近编辑（前 6 篇非置顶）/ 其它 ──────
+  // ── 三区分组：置顶 / 最近编辑（7 天内非置顶前 6 篇）/ 其它 ──
   const { pinned, recent, rest } = useMemo(() => {
     // 显式按修改时间倒序排序（防御自动保存后本地列表短暂乱序）
     const sorted: NoteItem[] = [...noteList].sort((a, b) =>
@@ -233,13 +235,28 @@ export default function Sidebar(): React.ReactElement {
     for (const note of sorted) {
       (note.is_pinned ? pinned : unpinned).push(note);
     }
-    return { pinned, recent: unpinned.slice(0, 6), rest: unpinned.slice(6) };
-  }, [noteList]);
+    // 最近编辑：仅统计 7 天内有修改的笔记，最多取前 6 篇
+    const recent: NoteItem[] = [];
+    for (const note of unpinned) {
+      // 列表已按时间倒序，遇到早于 7 天的即终止
+      if (Date.parse(note.updated_at) < recentCutoffMs) {
+        break;
+      }
+      recent.push(note);
+      if (recent.length >= 6) {
+        break;
+      }
+    }
+    return { pinned, recent, rest: unpinned.slice(recent.length) };
+  }, [noteList, recentCutoffMs]);
 
-  // 分区标题仅在该分区有意义（非全列表单一分区）时展示，避免小列表出现多余的「其它」标题
+  // 分区标题仅在列表真正拆成多个分区时展示，避免单一分区/小列表出现多余的标题
   const showPinned = pinned.length > 0;
-  const showRecent = recent.length > 0 && (pinned.length > 0 || rest.length > 0);
-  const showRest = rest.length > 0 && (pinned.length > 0 || recent.length > 0);
+  const showRecent = recent.length > 0;
+  const showRest = rest.length > 0;
+  const sectionCount =
+    Number(showPinned) + Number(showRecent) + Number(showRest);
+  const showHeaders = sectionCount > 1;
 
   // ── 笔记操作菜单状态 ────────────────────────────────────────
   /** 当前展开操作菜单的笔记 ID，null 表示无菜单打开 */
@@ -544,30 +561,37 @@ export default function Sidebar(): React.ReactElement {
           /* 搜索态：扁平匹配列表，不做分区；置顶笔记保留 Pin 小图标提示 */
           <ul className="space-y-1">{filteredList.map(renderNote)}</ul>
         ) : (
-          /* 常态：按 置顶 / 最近编辑 / 其它 三区分组展示 */
+          /* 常态：按 置顶 / 最近编辑 / 其它 分区展示；
+             仅当拆成多个分区时才显示分区标题，单一分区保持扁平列表 */
           <div className="space-y-1">
             {showPinned && (
-              <section className="pt-2">
-                <h3 className="px-3 pb-1 flex items-center gap-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
-                  <Pin size={12} className="shrink-0" />
-                  置顶
-                </h3>
+              <section className={showHeaders ? "pt-2" : ""}>
+                {showHeaders && (
+                  <h3 className="px-3 pb-1 flex items-center gap-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                    <Pin size={12} className="shrink-0" />
+                    置顶
+                  </h3>
+                )}
                 <ul className="space-y-1">{pinned.map(renderNote)}</ul>
               </section>
             )}
             {showRecent && (
-              <section className="pt-2">
-                <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
-                  最近编辑
-                </h3>
+              <section className={showHeaders ? "pt-2" : ""}>
+                {showHeaders && (
+                  <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                    最近编辑
+                  </h3>
+                )}
                 <ul className="space-y-1">{recent.map(renderNote)}</ul>
               </section>
             )}
             {showRest && (
-              <section className="pt-2">
-                <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
-                  其它
-                </h3>
+              <section className={showHeaders ? "pt-2" : ""}>
+                {showHeaders && (
+                  <h3 className="px-3 pb-1 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                    其它
+                  </h3>
+                )}
                 <ul className="space-y-1">{rest.map(renderNote)}</ul>
               </section>
             )}

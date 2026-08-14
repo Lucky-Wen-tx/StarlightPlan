@@ -12,6 +12,12 @@ interface NoteStore {
   // ── 状态 ──────────────────────────────────────────────────
   /** 笔记摘要列表（按修改时间倒序） */
   noteList: NoteItem[];
+  /**
+   * 最近编辑分区的 7 天窗口截止时间戳（毫秒）。
+   * 在 fetchNoteList 拉取列表时一并刷新（异步动作，可安全调用 Date.now()），
+   * 避免渲染期调用 Date.now() 触发 react-hooks/purity 规则。
+   */
+  recentCutoffMs: number;
   /** 当前选中笔记的 ID，null 表示未选中任何笔记 */
   currentId: string | null;
   /** 当前笔记标题（编辑中实时更新） */
@@ -67,6 +73,7 @@ interface NoteStore {
 export const useNoteStore = create<NoteStore>((set, get) => ({
   // ── 初始状态 ──────────────────────────────────────────────
   noteList: [],
+  recentCutoffMs: 0,
   currentId: null,
   currentTitle: "",
   currentContent: "",
@@ -82,7 +89,11 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   // ── 异步操作 ──────────────────────────────────────────────
   fetchNoteList: async (): Promise<void> => {
     const list: NoteItem[] = await api.getList();
-    set({ noteList: list });
+    set({
+      noteList: list,
+      // 一并刷新最近编辑的 7 天窗口截止时间（异步动作中调用 Date.now()，安全）
+      recentCutoffMs: Date.now() - 7 * 24 * 60 * 60 * 1000,
+    });
   },
 
   selectNote: async (id: string): Promise<void> => {
