@@ -61,6 +61,10 @@ export default function InputDialog({
   // ── 回车键提交 ──────────────────────────────────────────────
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Enter" && canSubmit) {
+      // 阻止 Enter 的浏览器默认行为：激活当前聚焦按钮的 click。
+      // 若不阻止：onConfirm 关闭弹窗时 Modal 会把焦点还原到触发打开弹窗的按钮
+      //（如「新建笔记」），Enter 默认动作随即对该按钮派发 click，导致弹窗关闭后立刻重开。
+      e.preventDefault();
       onConfirm(value.trim());
     }
   };
