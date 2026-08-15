@@ -1,5 +1,5 @@
 """
-拾光Plan — FastAPI 应用入口
+拾星Plan — FastAPI 应用入口
 - 注册所有 /api 接口路由
 - 统一错误处理（HTTPException）
 - 启动时初始化目录结构
@@ -15,8 +15,8 @@ from services import note_service
 
 # ── 应用实例 ──────────────────────────────────────────────
 app = FastAPI(
-    title="拾光Plan API",
-    description="拾光Plan 笔记后端服务 MVP",
+    title="拾星Plan API",
+    description="拾星Plan 笔记后端服务 MVP",
     version="1.0.0",
 )
 
