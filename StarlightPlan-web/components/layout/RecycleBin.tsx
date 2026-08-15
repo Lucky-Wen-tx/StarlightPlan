@@ -27,6 +27,7 @@ import { useRecycleStore } from "@/store/useRecycleStore";
 import { useToastStore } from "@/store/useToastStore";
 import type { NoteItem } from "@/types/note";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import ScrollableTitle from "@/components/common/ScrollableTitle";
 
 /**
  * 将 ISO 时间字符串格式化为 YYYY/MM/DD
@@ -63,6 +64,11 @@ export default function RecycleBin(): React.ReactElement {
 
   /** 彻底删除确认弹窗开关 */
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+  /**
+   * 当前鼠标悬停的条目 ID，null 表示未悬停。
+   * 驱动标题走马灯：悬浮在整个条目（行）上即触发动画，与行的悬浮背景区域一致。
+   */
+  const [hoverRowNoteId, setHoverRowNoteId] = useState<string | null>(null);
 
   // ── 派生状态 ──────────────────────────────────────────────
   /** 是否所有条目均被勾选（用于「全选/取消全选」文案切换） */
@@ -175,6 +181,8 @@ export default function RecycleBin(): React.ReactElement {
                       ? "bg-neutral-100 dark:bg-neutral-800"
                       : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
                   }`}
+                  onMouseEnter={() => setHoverRowNoteId(note.id)}
+                  onMouseLeave={() => setHoverRowNoteId(null)}
                 >
                   <div className="flex items-center">
                     {/* 复选框：独立勾选，点击不触发展开预览 */}
@@ -210,15 +218,15 @@ export default function RecycleBin(): React.ReactElement {
                       />
                       {/* 标题在上、删除于时间在下，上下排列 */}
                       <span className="min-w-0">
-                        <span
-                          className={`block text-[15px] truncate ${
+                        <ScrollableTitle
+                          text={note.title}
+                          hovered={hoverRowNoteId === note.id}
+                          className={`text-[15px] ${
                             isActive
                               ? "text-neutral-800 dark:text-neutral-200 font-bold"
                               : "text-neutral-700 dark:text-neutral-300"
                           }`}
-                        >
-                          {note.title}
-                        </span>
+                        />
                         <span className="block mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
                           删除于 {formatDate(note.updated_at)}
                         </span>

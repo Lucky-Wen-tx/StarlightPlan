@@ -134,3 +134,51 @@ body {
 .dark .outline-nav-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #737373; /* neutral-500 */
 }
+
+/* ── 可滚动标题（笔记名过长时悬浮走马灯滚动展示全文） ────────── */
+/* 根元素 = 可视视口：固定宽度、裁剪溢出内容；
+   文本不可选中，滚动时不会产生文字选中高亮（背景保持透明，与行背景色一致） */
+.scrollable-title {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* 静止：省略号截断（与普通列表标题观感一致） */
+.scrollable-title-truncate {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 轨道：内联 flex，宽度按内容撑开（两遍文本并排） */
+.scrollable-title-track {
+  display: inline-flex;
+  width: max-content;
+}
+
+/* 单份文本项：不收缩、不换行；右侧留固定间距（32px），
+   与第二遍文本保持距离，滚动时视觉不粘连 */
+.scrollable-title-item {
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-right: 32px;
+}
+
+/* 悬浮且确实超长：轨道整体向左连续平移（走马灯）。
+   循环时长由 ScrollableTitle 组件注入的 --scroll-duration（s）控制。 */
+.scrollable-title.is-scrolling .scrollable-title-track {
+  animation: scrollable-title-marquee var(--scroll-duration, 10s) linear infinite;
+}
+
+/* 走马灯：连续平移 50%（一个文本宽度 + 间距），第二遍无缝接上第一遍 */
+@keyframes scrollable-title-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}

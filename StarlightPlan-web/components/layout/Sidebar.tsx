@@ -22,6 +22,7 @@ import * as api from "@/lib/api";
 import type { NoteItem } from "@/types/note";
 import InputDialog from "@/components/common/InputDialog";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import ScrollableTitle from "@/components/common/ScrollableTitle";
 import RecycleBin from "@/components/layout/RecycleBin";
 
 /**
@@ -266,6 +267,11 @@ export default function Sidebar(): React.ReactElement {
    * 用于置顶笔记的图标切换：行 hover 显示 Pin，悬停到按钮上才显示三点菜单图标。
    */
   const [hoverBtnNoteId, setHoverBtnNoteId] = useState<string | null>(null);
+  /**
+   * 当前鼠标悬停的笔记条目 ID，null 表示未悬停。
+   * 驱动标题走马灯：悬浮在整个条目（行）上即触发动画，与行的悬浮背景区域一致。
+   */
+  const [hoverRowNoteId, setHoverRowNoteId] = useState<string | null>(null);
   /** 三点按钮 DOM 引用：菜单 fixed 定位时读取锚点屏幕坐标 */
   const moreButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -433,13 +439,15 @@ export default function Sidebar(): React.ReactElement {
     const showPinIcon: boolean = note.is_pinned && !isMenuOpen && !isBtnHovered;
     return (
       <li key={note.id} className="group relative">
-        {/* 条目容器：整行 hover 时显示右侧三点按钮；高亮/选中样式与原先一致 */}
+        {/* 条目容器：整行 hover 时显示右侧三点按钮并触发标题走马灯；高亮/选中样式与原先一致 */}
         <div
           className={`flex items-center rounded-xl transition-all ${
             isActive
               ? "bg-neutral-100 dark:bg-neutral-800"
               : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
           }`}
+          onMouseEnter={() => setHoverRowNoteId(note.id)}
+          onMouseLeave={() => setHoverRowNoteId(null)}
         >
           {/* 主点击区：点击选择/切换笔记 */}
           <button
@@ -455,15 +463,15 @@ export default function Sidebar(): React.ReactElement {
                   : "text-neutral-400 dark:text-neutral-500"
               }`}
             />
-            <span
-              className={`text-[15px] truncate ${
+            <ScrollableTitle
+              text={note.title}
+              hovered={hoverRowNoteId === note.id}
+              className={`text-[15px] ${
                 isActive
                   ? "text-neutral-800 dark:text-neutral-200 font-bold"
                   : "text-neutral-700 dark:text-neutral-300"
               }`}
-            >
-              {note.title}
-            </span>
+            />
           </button>
 
           {/* 三点操作按钮：默认隐藏，hover 整行显示；菜单展开期间常显。
