@@ -19,9 +19,9 @@ const ICON_MAP: Record<ThemeMode, typeof Sun> = {
 };
 
 const LABEL_MAP: Record<ThemeMode, string> = {
-  light: "当前：浅色模式 — 点击切换",
-  dark: "当前：深色模式 — 点击切换",
-  system: "当前：跟随系统 — 点击切换",
+  light: "浅色模式",
+  dark: "深色模式",
+  system: "跟随系统",
 };
 
 export default function ThemeToggle(): React.ReactElement {

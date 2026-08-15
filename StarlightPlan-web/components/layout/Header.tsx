@@ -139,29 +139,12 @@ export default function Header(): React.ReactElement {
           onChange={handleFileChange}
         />
 
-        {/* 导入按钮 */}
-        <button
-          type="button"
-          onClick={handleImportClick}
-          title="导入 Markdown 笔记"
-          aria-label="导入 Markdown 笔记"
-          className={ICON_BTN_CLASS}
-        >
-          <Upload size={18} />
-        </button>
-
         {/* 导出按钮（自包含导出：图片内嵌 base64） */}
         <button
           type="button"
           onClick={handleExport}
           disabled={exportDisabled}
-          title={
-            isExporting
-              ? "正在导出..."
-              : exportDisabled
-                ? "请先选择一篇笔记"
-                : "导出当前笔记为 Markdown（图片内嵌，可独立使用）"
-          }
+          title="导出"
           aria-label="导出当前笔记为 Markdown"
           className={`${ICON_BTN_CLASS} ${
             exportDisabled ? "opacity-40 cursor-not-allowed" : ""
@@ -170,8 +153,19 @@ export default function Header(): React.ReactElement {
           {isExporting ? (
             <span className="inline-block w-[18px] text-center">…</span>
           ) : (
-            <Download size={18} />
+            <Upload size={18} />
           )}
+        </button>
+
+        {/* 导入按钮 */}
+        <button
+          type="button"
+          onClick={handleImportClick}
+          title="导入"
+          aria-label="导入 Markdown 笔记"
+          className={ICON_BTN_CLASS}
+        >
+          <Download size={18} />
         </button>
 
         <ThemeToggle />
@@ -181,8 +175,8 @@ export default function Header(): React.ReactElement {
           type="button"
           onClick={toggleOutline}
           disabled={outlineDisabled}
+          title="目录"
           aria-pressed={outlineOpen}
-          title={outlineDisabled ? "请先选择一篇笔记" : "切换目录大纲"}
           aria-label="切换目录大纲"
           className={`${ICON_BTN_CLASS} ${
             outlineDisabled ? "opacity-40 cursor-not-allowed" : ""

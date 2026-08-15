@@ -474,7 +474,6 @@ export default function Sidebar(): React.ReactElement {
             onClick={(e) => handleToggleMenu(e, note.id)}
             onMouseEnter={() => setHoverBtnNoteId(note.id)}
             onMouseLeave={() => setHoverBtnNoteId(null)}
-            title="笔记操作"
             aria-label={`${note.title} 的操作菜单`}
             aria-expanded={isMenuOpen}
             className={`mr-1.5 shrink-0 p-1 rounded-md text-neutral-400 dark:text-neutral-500 cursor-pointer transition-all duration-150 ${
@@ -634,7 +633,6 @@ export default function Sidebar(): React.ReactElement {
         <button
           type="button"
           onClick={handleOpenRecycle}
-          title="打开回收站"
           className="shrink-0 flex items-center justify-center gap-2 px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 cursor-pointer transition-colors text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200"
         >
           <Trash2 size={15} className="shrink-0" />

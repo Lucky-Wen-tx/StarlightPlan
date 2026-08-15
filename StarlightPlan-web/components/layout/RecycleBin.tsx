@@ -123,7 +123,6 @@ export default function RecycleBin(): React.ReactElement {
           <button
             type="button"
             onClick={exitRecycle}
-            title="返回笔记列表"
             aria-label="返回笔记列表"
             className="shrink-0 p-1 -ml-1 rounded-md cursor-pointer text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
           >
@@ -141,7 +140,6 @@ export default function RecycleBin(): React.ReactElement {
           <button
             type="button"
             onClick={selectAll}
-            title={allSelected ? "取消全选" : "全选"}
             className="flex items-center gap-1.5 text-sm rounded-md leading-none cursor-pointer px-2 py-1 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
           >
             {allSelected ? (
@@ -242,7 +240,6 @@ export default function RecycleBin(): React.ReactElement {
             type="button"
             onClick={handleRestore}
             disabled={!hasSelection}
-            title={hasSelection ? "恢复选中的笔记" : "请先勾选笔记"}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors border ${
               hasSelection
                 ? "border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -258,7 +255,6 @@ export default function RecycleBin(): React.ReactElement {
             type="button"
             onClick={() => setConfirmOpen(true)}
             disabled={!hasSelection}
-            title={hasSelection ? "彻底删除选中的笔记" : "请先勾选笔记"}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
               hasSelection
                 ? "text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"

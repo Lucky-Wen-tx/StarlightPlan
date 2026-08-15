@@ -130,7 +130,6 @@ export default function OutlinePanel({
               key={`${item.level}-${item.text}-${index}`}
               type="button"
               onClick={() => handleScrollTo(index)}
-              title={item.text}
               className="block w-full truncate px-2 py-1 text-[13px] leading-5 text-left text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               style={{ paddingLeft: 4 + (item.level - 1) * 12 }}
             >
