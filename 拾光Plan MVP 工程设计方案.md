@@ -46,7 +46,7 @@ GrowPlan-Notes/
 ## 三、后端 FastAPI 工程设计
 ### 1. 项目目录结构
 ```
-grow-plan-server/
+StarlightPlan-server/
 ├── main.py                # 项目入口，注册路由、托管静态资源
 ├── config.py              # 全局配置：笔记根目录、服务端口等
 ├── schemas.py             # Pydantic 数据模型定义
@@ -94,7 +94,7 @@ grow-plan-server/
 
 ### 2. 项目目录结构（App Router 模式）
 ```
-grow-plan-web/
+StarlightPlan-web/
 ├── app/
 │   ├── layout.tsx         # 全局布局，三栏结构、主题Provider
 │   ├── page.tsx           # 首页，动态渲染欢迎页/编辑页
