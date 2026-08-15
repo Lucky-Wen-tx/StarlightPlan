@@ -1,4 +1,4 @@
-# 拾光Plan 后端 MVP 需求规范
+# 拾星Plan 后端 MVP 需求规范
 ## 技术栈
 - FastAPI + Pydantic v2 + uvicorn
 - 存储：本地文件系统，笔记以 .md 文件形式存在指定目录

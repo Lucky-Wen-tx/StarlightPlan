@@ -2,7 +2,7 @@
 
 /**
  * 顶部导航栏
- * - 左侧：应用标题「拾光Plan」
+ * - 左侧：应用标题「拾星Plan」
  * - 右侧：导入 / 导出 / 主题切换按钮
  *
  * 导入/导出说明：
@@ -117,14 +117,14 @@ export default function Header(): React.ReactElement {
       <div className="flex items-center gap-2.5">
         <Image
           src="/ico_index.png"
-          alt="拾光"
+          alt="拾星"
           width={28}
           height={28}
           className="shrink-0"
           unoptimized
         />
         <span className="text-xl font-semibold tracking-wide text-neutral-800 dark:text-neutral-100">
-          拾光Plan
+          拾星Plan
         </span>
       </div>
 

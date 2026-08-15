@@ -1,4 +1,4 @@
-# 拾光Plan 前端 MVP 需求规范
+# 拾星Plan 前端 MVP 需求规范
 ## 技术栈
 - Next.js 14 App Router + TypeScript + Tailwind CSS
 - 状态管理：zustand

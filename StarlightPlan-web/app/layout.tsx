@@ -14,7 +14,7 @@ import ToastContainer from "@/components/common/ToastContainer";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "拾光Plan",
+  title: "拾星Plan",
   description: "极简 Markdown 笔记应用",
 };
 

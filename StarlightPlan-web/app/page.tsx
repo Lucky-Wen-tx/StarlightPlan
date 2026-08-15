@@ -28,7 +28,7 @@ function Welcome(): React.ReactElement {
         <div className="inline-flex items-center justify-center w-20 h-15 mb-5">
           <Image
             src="/ico_index.png"
-            alt="拾光"
+            alt="拾星"
             width={55}
             height={55}
             unoptimized
@@ -36,7 +36,7 @@ function Welcome(): React.ReactElement {
         </div>
         {/* 引导文案 */}
         <h2 className="text-2xl font-medium text-neutral-500 dark:text-neutral-400">
-          拾光Plan
+          拾星Plan
         </h2>
         <p
           className={`mt-2 text-lg text-neutral-400 dark:text-neutral-500 ${subtitleFont.className}`}
