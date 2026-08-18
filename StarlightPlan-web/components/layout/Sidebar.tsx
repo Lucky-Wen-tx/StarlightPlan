@@ -453,7 +453,7 @@ export default function Sidebar(): React.ReactElement {
           <button
             type="button"
             onClick={() => handleSelect(note.id)}
-            className="flex-1 min-w-0 flex items-center gap-2 px-4 py-2.5 text-left cursor-pointer font-normal"
+            className="flex-1 min-w-0 flex items-center gap-2 pl-4 pr-1 py-2.5 text-left cursor-pointer font-normal"
           >
             <FileText
               size={14}
@@ -466,7 +466,7 @@ export default function Sidebar(): React.ReactElement {
             <ScrollableTitle
               text={note.title}
               hovered={hoverRowNoteId === note.id}
-              className={`text-[15px] ${
+              className={`flex-1 min-w-0 text-[15px] ${
                 isActive
                   ? "text-neutral-800 dark:text-neutral-200 font-bold"
                   : "text-neutral-700 dark:text-neutral-300"
