@@ -32,6 +32,9 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { uploadImage } from "@/lib/api";
 import StatusBar from "@/components/editor/StatusBar";
 import OutlinePanel from "@/components/editor/OutlinePanel";
+import HeadingLabel from "@/components/editor/HeadingLabel";
+import ImageLightbox from "@/components/common/ImageLightbox";
+import { useImageLightbox } from "@/components/editor/useImageLightbox";
 
 /**
  * Milkdown 编辑器内部组件
@@ -64,6 +67,9 @@ function MilkdownEditor(): React.ReactElement {
   const isLoadingRef = useRef<boolean>(true);
   /** 首挂载时的初始内容：作为 Crepe 的 defaultValue */
   const initialContentRef = useRef<string>(currentContent);
+
+  // ── 图片灯箱触发：编辑模式用双击，避开 ProseMirror 单击选中图片 ──
+  const { lightbox, close } = useImageLightbox(scrollContainerRef, "dblclick");
 
   // ═══════════════════════════════════════════════════════════════
   // 初始化 Crepe 编辑器
@@ -150,6 +156,8 @@ function MilkdownEditor(): React.ReactElement {
         {/* 编辑器主体：外层滚动容器填充 flex-1 父元素，避免 h-full 依赖显式父高度 */}
         <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto">
           <Milkdown />
+          {/* 标题 hover 层级标识（H1~H6，portal 到 body） */}
+          <HeadingLabel containerRef={scrollContainerRef} />
         </div>
 
         {/* 加载覆盖层：Milkdown 就绪后自动隐藏 */}
@@ -172,6 +180,15 @@ function MilkdownEditor(): React.ReactElement {
 
       {/* 底部状态栏 */}
       <StatusBar />
+
+      {/* 图片灯箱（双击放大，portal 到 body，z-[300]）；key=src 强制换图/重开时重挂载复位缩放 */}
+      <ImageLightbox
+        key={lightbox?.src ?? ""}
+        open={!!lightbox}
+        src={lightbox?.src ?? ""}
+        alt={lightbox?.alt}
+        onClose={close}
+      />
     </div>
   );
 }

@@ -16,6 +16,9 @@ import { Crepe } from "@milkdown/crepe";
 import "@milkdown/crepe/theme/common/style.css";
 import "@milkdown/crepe/theme/frame.css";
 import "./milkdown-overrides.css";
+import HeadingLabel from "@/components/editor/HeadingLabel";
+import ImageLightbox from "@/components/common/ImageLightbox";
+import { useImageLightbox } from "@/components/editor/useImageLightbox";
 
 /**
  * 预览内容组件（需包裹在 MilkdownProvider 内使用）
@@ -29,6 +32,11 @@ function MarkdownPreviewContent({
   const initialContentRef = useRef<string>(content);
   /** Crepe 实例引用（就绪后用于 setReadonly） */
   const crepeRef = useRef<Crepe | null>(null);
+  /** 预览滚动容器引用（供标题标识 / 图片灯箱事件委托） */
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // ── 图片灯箱触发：只读预览用单击 ──────────────────────────
+  const { lightbox, close } = useImageLightbox(scrollContainerRef, "click");
 
   // ── 初始化 Crepe 预览实例 ────────────────────────────────
   const { loading } = useEditor((root) => {
@@ -65,8 +73,10 @@ function MarkdownPreviewContent({
     <div className="h-full flex flex-col">
       {/* 预览主体：外层滚动容器填充 flex-1 父元素，与编辑器布局一致 */}
       <div className="flex-1 relative">
-        <div className="absolute inset-0 overflow-y-auto">
+        <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto">
           <Milkdown />
+          {/* 标题 hover 层级标识（H1~H6，portal 到 body） */}
+          <HeadingLabel containerRef={scrollContainerRef} />
         </div>
 
         {/* 加载覆盖层：Milkdown 就绪后自动隐藏 */}
@@ -78,6 +88,15 @@ function MarkdownPreviewContent({
           </div>
         )}
       </div>
+
+      {/* 图片灯箱（单击放大，portal 到 body，z-[300]）；key=src 强制换图/重开时重挂载复位缩放 */}
+      <ImageLightbox
+        key={lightbox?.src ?? ""}
+        open={!!lightbox}
+        src={lightbox?.src ?? ""}
+        alt={lightbox?.alt}
+        onClose={close}
+      />
     </div>
   );
 }
