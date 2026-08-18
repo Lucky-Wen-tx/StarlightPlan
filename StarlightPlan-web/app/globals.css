@@ -173,6 +173,29 @@ body {
   animation: scrollable-title-marquee var(--scroll-duration, 10s) linear infinite;
 }
 
+/* hover 且标题确实超长（可触发滚动）时：可视容器左右两侧加渐变淡出遮罩（mask）。
+   含 200ms 延迟内的截断态与滚动态，文字从右侧滚入、从左侧滚出时两端平滑淡化。
+   未超长的短标题 hover 不出现遮罩；非 hover 静止态也不淡化标题起始处。
+   淡化宽度由 --marquee-fade 控制（默认 6px，约为 15px 字号的 1/4 字符，
+   明显遮挡区约 3px≈1/5 字），如需调整改这一处即可。 */
+.scrollable-title.is-overflow-hover {
+  --marquee-fade: 6px;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--marquee-fade),
+    black calc(100% - var(--marquee-fade)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--marquee-fade),
+    black calc(100% - var(--marquee-fade)),
+    transparent 100%
+  );
+}
+
 /* 走马灯：连续平移 50%（一个文本宽度 + 间距），第二遍无缝接上第一遍 */
 @keyframes scrollable-title-marquee {
   from {
