@@ -26,11 +26,11 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
-/** 徽标尺寸（px） */
-const LABEL_W = 34;
+/** 徽标尺寸（px）：宽接近高，近似正方形，左右内边距小 */
+const LABEL_W = 22;
 const LABEL_H = 20;
-/** 徽标右缘到标题左缘的间距（配合 .ProseMirror 100px 左内边距，徽标落入左 gutter） */
-const LABEL_GAP = 64;
+/** 徽标右缘到标题左缘的间距（贴近标题；配合 .ProseMirror 100px 左内边距，徽标落入左 gutter） */
+const LABEL_GAP = 4;
 
 interface HeadingLabelProps {
   /** 编辑器/预览的滚动容器（absolute inset-0 overflow-y-auto 的 div） */
@@ -126,7 +126,7 @@ export default function HeadingLabel({
   // 挂到 body：避开编辑区所有滚动容器与 overflow 裁剪；dark: 变体随 html.dark 生效
   return createPortal(
     <div
-      className="fixed z-[60] pointer-events-none select-none flex items-center justify-center rounded-md text-[10px] font-medium tracking-wider text-neutral-500 dark:text-neutral-400 bg-neutral-200/80 dark:bg-neutral-700/80 border border-neutral-300/60 dark:border-neutral-600/60 backdrop-blur-sm"
+      className="fixed z-[60] pointer-events-none select-none flex items-center justify-center rounded-md text-[10px] font-medium text-neutral-400/80 dark:text-neutral-500 bg-neutral-200/45 dark:bg-neutral-700/40 border border-neutral-300/40 dark:border-neutral-600/40"
       style={{ top: badge.pos.top, left: badge.pos.left, width: LABEL_W, height: LABEL_H }}
     >
       H{badge.level}

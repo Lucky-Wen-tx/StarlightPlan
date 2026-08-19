@@ -98,63 +98,11 @@
   margin-left: -1px;
 }
 
-/* ── 7. 树状列表引导线（Typora/Notion 风格）────────────────── */
-/* 说明：为嵌套列表绘制父子级竖线 + 分支横线，帮助看清多级层级结构。
-   几何常量全部收敛为 CSS 变量，可在 DevTools 里直接改值现场微调，
-   无需改规则本身：
-     --tree-guide-x      竖线相对 li 左缘的水平偏移（对齐列表 marker 列）
-     --tree-guide-top    分支点纵坐标（约对齐父项首行文字垂直中心）
-     --tree-branch-w     分支横线宽度（竖线向左伸向父项 marker 的长度）
-   Crepe 已把 ul/ol 的 padding 归零（.ProseMirror ul, ol { padding: 0 }），
-   嵌套缩进由本文件的 margin-left 自控，保证竖线列位置确定。 */
-.milkdown {
-  --tree-line-color: #ef2727; /* 浅色引导线（neutral-300） */
-  --tree-guide-x: -1.1em;
-  --tree-guide-top: 0.85em;
-  --tree-branch-w: 0.9em;
-}
-.dark .milkdown {
-  --tree-line-color: #525252; /* 深色引导线（neutral-600） */
-}
-
-/* 定位上下文：所有 li 建立 relative，供竖线/分支横线绝对定位 */
-.milkdown .ProseMirror li {
-  position: relative;
-}
-
-/* 竖线：带直接子列表的父项，自首行基线垂直贯穿整棵子树 */
-.milkdown .ProseMirror li:has(> ul, > ol)::before {
-  content: "";
-  position: absolute;
-  top: var(--tree-guide-top);
-  bottom: 0;
-  left: var(--tree-guide-x);
-  width: 1px;
-  background: var(--tree-line-color);
-  pointer-events: none; /* 不拦截选择与点击 */
-}
-
-/* 分支横线：从竖线向左伸向父项 marker */
-.milkdown .ProseMirror li:has(> ul, > ol)::after {
-  content: "";
-  position: absolute;
-  top: var(--tree-guide-top);
-  left: calc(var(--tree-guide-x) - var(--tree-branch-w));
-  width: var(--tree-branch-w);
-  height: 1px;
-  background: var(--tree-line-color);
-  pointer-events: none;
-}
-
-/* 有序列表数字占位较宽，分支横线略加长 */
-.milkdown .ProseMirror ol li:has(> ul, > ol)::after {
-  --tree-branch-w: 1.4em;
-}
-
-/* 自控嵌套列表缩进，保证竖线列位置确定；
-   若 schema 对嵌套列表注入了 inline style，需在此追加 !important 覆盖 */
-.milkdown .ProseMirror li > ul,
-.milkdown .ProseMirror li > ol {
-  margin-left: 1.4em;
-  padding-left: 0;
+/* ── 7. 隐藏图片块右上角的 caption（图片说明）操作按钮 ────── */
+/* 说明：Crepe 图片块在右上角显示一个消息气泡图标按钮，用于为图片添加
+   说明文字（caption）。本应用不需要该能力，且气泡图标易被误认为「评论
+   入口」，故隐藏。其 DOM 为 .milkdown-image-block > .image-wrapper > .operation，
+   该 .operation 容器内仅包含这一个 caption 按钮，隐藏整个容器即可。 */
+.milkdown .milkdown-image-block > .image-wrapper > .operation {
+  display: none;
 }
