@@ -153,16 +153,20 @@ function MilkdownEditor(): React.ReactElement {
           outlineOpen ? "outline-open" : ""
         }`}
       >
-        {/* 编辑器主体：外层滚动容器填充 flex-1 父元素，避免 h-full 依赖显式父高度 */}
-        <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto">
+        {/* 编辑器主体：外层滚动容器填充 flex-1 父元素，避免 h-full 依赖显式父高度；
+            背景与书写面（.milkdown）一致，内容不足一屏时下方空余区域不露页面底色 */}
+        <div
+          ref={scrollContainerRef}
+          className="absolute inset-0 overflow-y-auto bg-neutral-50 dark:bg-[#1f1f1f]"
+        >
           <Milkdown />
           {/* 标题 hover 层级标识（H1~H6，portal 到 body） */}
           <HeadingLabel containerRef={scrollContainerRef} />
         </div>
 
-        {/* 加载覆盖层：Milkdown 就绪后自动隐藏 */}
+        {/* 加载覆盖层：Milkdown 就绪后自动隐藏；背景与编辑器书写面（#1f1f1f）一致，避免近黑闪跳 */}
         {!editorReady && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-neutral-50 dark:bg-[#1f1f1f]">
             <p className="text-sm text-neutral-400 dark:text-neutral-500 select-none">
               编辑器正在赶来中...
             </p>

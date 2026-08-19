@@ -514,7 +514,7 @@ export default function Sidebar(): React.ReactElement {
   };
 
   return (
-    <aside className="w-64 shrink-0 flex flex-col border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+    <aside className="w-64 shrink-0 flex flex-col border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1a]">
       {/* ── 回收站视图：整体替换为回收站面板 ───────────────── */}
       {isRecycleOpen ? (
         <RecycleBin />

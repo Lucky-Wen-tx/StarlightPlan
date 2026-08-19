@@ -20,34 +20,48 @@
  */
 
 /* ── 1. 亮色主题变量：与应用配色融合 ───────────────────────── */
-/* 编辑区背景与页面一致（neutral-50 #fafafa）；字体改用应用字体栈 */
+/* 编辑区背景与页面一致（neutral-50 #fafafa）；字体改用应用字体栈。
+   注意：Crepe 标题（h1~h6）使用独立的 --crepe-font-title 变量（默认衬线体
+   "Noto Serif"/Times），需一并覆写，否则标题字体不随正文变化。 */
 .milkdown {
   --crepe-color-background: #fafafa;
   --crepe-font-default: var(--font-sans);
+  --crepe-font-title: var(--font-sans);
   --crepe-font-code: ui-monospace, SFMono-Regular, Menlo, Consolas,
     "Courier New", monospace;
 }
 
-/* ── 2. 暗色主题变量覆盖（值取自官方 frame-dark）──────────── */
-/* 背景用应用深色 #1f1f1f（与页面 neutral-950 体系保持一致） */
+/* ── 2. 暗色主题变量覆盖 ──────────────────────────────────── */
+/* 设计说明（基于亮色 UI 层级做同构镜像，保证舒适度与一致性）：
+   - 亮色层级（从亮到暗）：
+       background(#fafafa) > surface(#f7f7f7) > surface-low(#ededed)
+       > hover(#e0e0e0) > selected(#d5d5d5) > inline-area(#cacaca)
+     暗色按同一相对顺序镜像（从暗到亮），深浅关系与亮色一一对应，
+     杜绝「surface 与 surface-low 反序」造成的灰度混乱。
+   - 避免纯黑刺眼：最暗背景 #1f1f1f，代码块 surface #2a2a2a，
+     都不落到 #000/#121212 这类近纯黑。
+   - 灰阶单调递增、过渡连贯：背景 < surface < surface-low < hover
+     < inline-area < selected，六级分明。
+   - 文字对比度充足（WCAG）：on-background ≈ 12:1、on-surface ≈ 9:1、
+     on-surface-variant（次要文字）≈ 6:1、outline 作边框保持低调。 */
 .dark .milkdown {
-  --crepe-color-background: #1f1f1f;
-  --crepe-color-on-background: #e6e6e6;
-  --crepe-color-surface: #121212;
-  --crepe-color-surface-low: #1c1c1c;
-  --crepe-color-on-surface: #d1d1d1;
-  --crepe-color-on-surface-variant: #a9a9a9;
-  --crepe-color-outline: #757575;
-  --crepe-color-primary: #b5b5b5;
+  --crepe-color-background: #1f1f1f;        /* 书写面（最深，非纯黑） */
+  --crepe-color-on-background: #e0e0e0;     /* 正文文字 */
+  --crepe-color-surface: #2a2a2a;           /* 代码块 / 浮层面板 */
+  --crepe-color-surface-low: #333333;       /* 面板内次级表面 */
+  --crepe-color-on-surface: #d4d4d4;        /* 表面上的文字 */
+  --crepe-color-on-surface-variant: #a3a3a3; /* 次要文字 */
+  --crepe-color-outline: #4d4d4d;           /* 边框 / 分隔线 */
+  --crepe-color-primary: #cccccc;           /* 交互主色 */
   --crepe-color-secondary: #4d4d4d;
-  --crepe-color-on-secondary: #d6d6d6;
+  --crepe-color-on-secondary: #e5e5e5;
   --crepe-color-inverse: #e5e5e5;
   --crepe-color-on-inverse: #2a2a2a;
-  --crepe-color-inline-code: #ff6666;
-  --crepe-color-error: #ff6666;
-  --crepe-color-hover: #232323;
-  --crepe-color-selected: #2f2f2f;
-  --crepe-color-inline-area: #2b2b2b;
+  --crepe-color-inline-code: #ff8080;       /* 行内代码（暗色下用较亮的红保证可读） */
+  --crepe-color-error: #ff8080;
+  --crepe-color-hover: #383838;             /* hover 反馈 */
+  --crepe-color-selected: #454545;          /* 选中高亮 */
+  --crepe-color-inline-area: #3d3d3d;       /* 行内选中区域 */
 }
 
 /* ── 3. 编辑区内边距：与 Vditor 一致的书写宽度 ─────────────── */
@@ -98,7 +112,24 @@
   margin-left: -1px;
 }
 
-/* ── 7. 隐藏图片块右上角的 caption（图片说明）操作按钮 ────── */
+/* ── 7. 浅色主题代码块背景加深一档 ────────────────────────── */
+/* 说明：代码块主体背景由 Crepe 的 --crepe-color-surface 驱动（默认 #f7f7f7），
+   与页面背景 #fafafa 区分度低。这里在浅色下把代码块容器、CodeMirror 编辑区、
+   行号栏统一加深为 #eeeeee，使其在视觉上更易与正文区分。
+   注意：只定向作用于代码块（不改全局 surface，避免影响斜杠菜单等浮层）；
+   暗色模式用 .dark 规则恢复 --crepe-color-surface 变量值。 */
+.milkdown .milkdown-code-block,
+.milkdown .milkdown-code-block .cm-editor,
+.milkdown .milkdown-code-block .cm-gutters {
+  background: #f2f2f2;
+}
+.dark .milkdown .milkdown-code-block,
+.dark .milkdown .milkdown-code-block .cm-editor,
+.dark .milkdown .milkdown-code-block .cm-gutters {
+  background: var(--crepe-color-surface);
+}
+
+/* ── 8. 隐藏图片块右上角的 caption（图片说明）操作按钮 ────── */
 /* 说明：Crepe 图片块在右上角显示一个消息气泡图标按钮，用于为图片添加
    说明文字（caption）。本应用不需要该能力，且气泡图标易被误认为「评论
    入口」，故隐藏。其 DOM 为 .milkdown-image-block > .image-wrapper > .operation，

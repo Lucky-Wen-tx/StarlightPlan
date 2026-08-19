@@ -33,12 +33,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="h-screen flex flex-col bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100">
+      <body className="h-screen flex flex-col bg-neutral-50 dark:bg-[#1a1a1a] text-neutral-800 dark:text-neutral-100">
         <ThemeProvider>
           <Header />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar />
-            <main className="flex-1 overflow-auto bg-neutral-50 dark:bg-neutral-950">
+            <main className="flex-1 overflow-auto bg-neutral-50 dark:bg-[#1a1a1a]">
               {children}
             </main>
           </div>

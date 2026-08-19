@@ -105,7 +105,7 @@ export default function OutlinePanel({
 
   return (
     <aside
-      className={`absolute top-1 right-0 bottom-0 z-20 w-[200px] flex flex-col border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-[-4px_0_16px_rgba(0,0,0,0.06)] dark:shadow-[-4px_0_16px_rgba(0,0,0,0.3)] transform-gpu transition-transform duration-300 ease-in-out ${
+      className={`absolute top-1 right-0 bottom-0 z-20 w-[200px] flex flex-col border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#1a1a1a] shadow-[-4px_0_16px_rgba(0,0,0,0.06)] dark:shadow-[-4px_0_16px_rgba(0,0,0,0.3)] transform-gpu transition-transform duration-300 ease-in-out ${
         open ? "translate-x-0" : "translate-x-full pointer-events-none"
       }`}
     >
