@@ -15,7 +15,7 @@
   /* 遮罩层淡入 */
   --animate-overlay-in: overlay-in 0.2s ease-out;
   /* 弹窗面板淡入 + 从 0.95 倍缩放到 1，模拟弹出效果 */
-  --animate-panel-in: panel-in 0.2s ease-out;
+  --animate-panel-in: panel-in 0.1s ease-out;
 
   @keyframes overlay-in {
     from {

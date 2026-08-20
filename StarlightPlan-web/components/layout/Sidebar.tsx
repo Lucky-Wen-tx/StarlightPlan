@@ -10,6 +10,7 @@ import {
   PenLine,
   FileText,
   Search,
+  Settings,
   Ellipsis,
   Trash2,
   Pin,
@@ -24,6 +25,7 @@ import InputDialog from "@/components/common/InputDialog";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import ScrollableTitle from "@/components/common/ScrollableTitle";
 import RecycleBin from "@/components/layout/RecycleBin";
+import SettingsDialog from "@/components/layout/SettingsDialog";
 
 /**
  * 笔记操作悬浮菜单卡片
@@ -206,10 +208,12 @@ export default function Sidebar(): React.ReactElement {
 
   // ── 回收站视图状态 ────────────────────────────────────────
   const isRecycleOpen: boolean = useRecycleStore((s) => s.isOpen);
-  const enterRecycle = useRecycleStore((s) => s.enter);
 
   // ── 搜索状态 ──────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // ── 设置弹窗开关 ─────────────────────────────────────────
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
 
   /** 是否处于搜索状态（有非空关键词） */
   const isSearching = searchQuery.trim().length > 0;
@@ -419,16 +423,6 @@ export default function Sidebar(): React.ReactElement {
     [currentId, selectNote, showToast],
   );
 
-  // ── 打开回收站视图（返回由回收站顶部按钮负责）─────────────
-  const handleOpenRecycle = useCallback((): void => {
-    // 拉取回收站列表失败时以轻提示反馈
-    enterRecycle().catch((err: unknown) => {
-      const message: string =
-        err instanceof Error ? err.message : "进入回收站失败，请稍后重试";
-      showToast(message);
-    });
-  }, [enterRecycle, showToast]);
-
   // ── 渲染单条笔记列表项（搜索扁平列表与三个分区复用）───────
   const renderNote = (note: NoteItem): React.ReactElement => {
     const isActive: boolean = note.id === currentId;
@@ -636,17 +630,23 @@ export default function Sidebar(): React.ReactElement {
         </>
       )}
 
-      {/* ── 底部：回收站入口（仅笔记视图显示，返回由回收站顶部按钮负责） ── */}
+      {/* ── 底部：设置入口（圆角矩形、无边框、文字靠左；仅笔记视图显示） ── */}
       {!isRecycleOpen && (
         <button
           type="button"
-          onClick={handleOpenRecycle}
-          className="shrink-0 flex items-center justify-center gap-2 px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 cursor-pointer transition-colors text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200"
+          onClick={() => setSettingsOpen(true)}
+          className="shrink-0 flex items-center justify-start gap-2 mx-3 mb-3 px-4 py-3 rounded-lg cursor-pointer transition-colors text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200"
         >
-          <Trash2 size={15} className="shrink-0" />
-          回收站
+          <Settings size={15} className="shrink-0" />
+          设置
         </button>
       )}
+
+      {/* ── 设置弹窗（渲染在条件块外：点笔记进入回收站视图的切换瞬间不卸载，保证 onClose 正常执行） ── */}
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </aside>
   );
 }

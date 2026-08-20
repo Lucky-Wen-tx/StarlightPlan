@@ -51,6 +51,8 @@ interface RecycleStore {
   // ── 批量操作 ─────────────────────────────────────────────
   /** 恢复所有勾选的笔记到笔记列表，并刷新回收站与笔记两侧列表 */
   restoreSelected: () => Promise<void>;
+  /** 恢复单篇笔记到笔记列表（设置弹窗「恢复」按钮使用），并刷新两侧列表 */
+  restoreOne: (id: string) => Promise<void>;
   /** 彻底删除所有勾选的笔记（不可恢复），并刷新回收站列表 */
   permanentDeleteSelected: () => Promise<void>;
 }
@@ -147,6 +149,24 @@ export const useRecycleStore = create<RecycleStore>((set, get) => ({
       state.currentRecycleId !== null && ids.includes(state.currentRecycleId);
     set({
       selectedIds: [],
+      currentRecycleId: previewCleared ? null : state.currentRecycleId,
+      currentRecycleContent: previewCleared ? "" : state.currentRecycleContent,
+    });
+
+    // 刷新回收站列表 + 笔记列表（恢复后笔记列表应包含新恢复的笔记）
+    await get().fetchList();
+    await useNoteStore.getState().fetchNoteList();
+  },
+
+  restoreOne: async (id: string): Promise<void> => {
+    // 调用单篇恢复接口
+    await api.restoreRecycleNote(id);
+
+    // 若当前预览的笔记正是被恢复的这一篇 → 清空预览（与 restoreSelected 逻辑一致）
+    const state = get();
+    const previewCleared: boolean =
+      state.currentRecycleId !== null && state.currentRecycleId === id;
+    set({
       currentRecycleId: previewCleared ? null : state.currentRecycleId,
       currentRecycleContent: previewCleared ? "" : state.currentRecycleContent,
     });

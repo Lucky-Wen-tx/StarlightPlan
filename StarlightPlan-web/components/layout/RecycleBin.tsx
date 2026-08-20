@@ -26,24 +26,9 @@ import {
 import { useRecycleStore } from "@/store/useRecycleStore";
 import { useToastStore } from "@/store/useToastStore";
 import type { NoteItem } from "@/types/note";
+import { formatDate } from "@/lib/format";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import ScrollableTitle from "@/components/common/ScrollableTitle";
-
-/**
- * 将 ISO 时间字符串格式化为 YYYY/MM/DD
- * @param iso - 后端返回的 ISO 8601 时间字符串
- * @returns 形如 2026/08/10；解析失败时返回「未知时间」兜底
- */
-function formatDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return "未知时间";
-  }
-  const year: number = date.getFullYear();
-  const month: string = String(date.getMonth() + 1).padStart(2, "0");
-  const day: string = String(date.getDate()).padStart(2, "0");
-  return `${year}/${month}/${day}`;
-}
 
 export default function RecycleBin(): React.ReactElement {
   // ── 从 store 读取回收站状态与操作 ───────────────────────────
