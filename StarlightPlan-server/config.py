@@ -20,6 +20,11 @@ ASSETS_DIR = os.path.join(NOTES_ROOT, "assets")
 # 以 . 开头命名，list_notes 扫描时天然忽略，不会被当作笔记
 PINNED_FILE = os.path.join(NOTES_ROOT, ".pinned.json")
 
+# ── 回收站容量配置 ───────────────────────────────────────
+# 回收站最多保留的笔记数量；超出后自动永久删除删除时间最早的笔记。
+# 注意：前端 SettingsDialog 中的 RECYCLE_MAX_ITEMS 需与此保持一致。
+RECYCLE_MAX_ITEMS = 99
+
 # ── 服务配置 ──────────────────────────────────────────────
 # FastAPI 服务监听端口
 PORT = 8000

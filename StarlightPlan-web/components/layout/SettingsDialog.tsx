@@ -45,6 +45,13 @@ const PANEL_SHADOW =
 const ICON_BTN_CLASS =
   "cursor-pointer p-1.5 rounded-lg text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors";
 
+/**
+ * 回收站容量上限。
+ * 注意：必须与后端 config.py 的 RECYCLE_MAX_ITEMS 保持一致，
+ * 后端负责强制清理（超出自动删最旧），此处仅用于展示 x/99 统计。
+ */
+const RECYCLE_MAX_ITEMS = 99;
+
 /** 弹窗内可切换的 Tab 类型 */
 type SettingsTab = "general" | "recycle";
 
@@ -248,19 +255,25 @@ export default function SettingsDialog({
               <GeneralPanel mode={mode} setMode={setMode} />
             ) : (
               <div>
-                {/* 搜索框 */}
-                <div className="relative">
-                  <Search
-                    size={14}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500"
-                  />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="搜索笔记…"
-                    className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-neutral-300 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 outline-none transition-all"
-                  />
+                {/* 搜索框 + 回收站容量统计 */}
+                <div className="flex flex-col gap-1">
+                  <div className="relative">
+                    <Search
+                      size={14}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500"
+                    />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="搜索笔记…"
+                      className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-neutral-300 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 outline-none transition-all"
+                    />
+                  </div>
+                  {/* 容量统计：右下角显示 当前数量 / 上限 */}
+                  <p className="self-end leading-none text-xs text-neutral-400 dark:text-neutral-500 select-none">
+                    {recycleList.length}/{RECYCLE_MAX_ITEMS}
+                  </p>
                 </div>
 
                 {/* 已删除笔记列表 */}

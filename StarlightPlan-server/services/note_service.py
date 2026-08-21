@@ -15,7 +15,7 @@ import json
 import uuid
 from datetime import datetime
 
-from config import NOTES_ROOT, RECYCLE_DIR, ASSETS_DIR, PINNED_FILE
+from config import NOTES_ROOT, RECYCLE_DIR, ASSETS_DIR, PINNED_FILE, RECYCLE_MAX_ITEMS
 from schemas import NoteCreate, NoteUpdate, NoteSummary, NoteDetail
 
 # ── 常量 ──────────────────────────────────────────────────
@@ -474,6 +474,52 @@ def update_note(note_id: str, data: NoteUpdate) -> NoteDetail:
 # 回收站操作
 # ═══════════════════════════════════════════════════════════
 
+def _enforce_recycle_capacity() -> None:
+    """
+    回收站容量控制：数量超过上限（RECYCLE_MAX_ITEMS）时，
+    自动永久删除删除时间最早的笔记，直到数量不超过上限。
+
+    触发时机：delete_note 将笔记移入回收站后调用。
+    回收站中文件的 updated_at 即删除时间（delete_note 末尾会重置为当前时间），
+    因此按 updated_at 升序排序即为删除先后顺序，删除最旧的超额部分（FIFO）。
+
+    说明：自动清理对用户不可见，删除不可恢复，
+    与 RECYCLE_MAX_ITEMS 前端展示值（x/99）配套。
+    """
+    if not os.path.isdir(RECYCLE_DIR):
+        return
+
+    # 收集回收站中所有 .md 文件及其删除时间戳
+    items: list[tuple[str, float]] = []
+    for entry in os.listdir(RECYCLE_DIR):
+        if not entry.endswith(".md") or entry.startswith("."):
+            continue
+        file_path = os.path.join(RECYCLE_DIR, entry)
+        if not os.path.isfile(file_path):
+            continue
+        try:
+            mtime = os.stat(file_path).st_mtime
+        except OSError:
+            # 单个文件读取失败不中断容量控制，跳过该文件
+            continue
+        items.append((entry, mtime))
+
+    excess = len(items) - RECYCLE_MAX_ITEMS
+    if excess <= 0:
+        return
+
+    # 删除时间最早（最旧）的在前，只删除超出上限的部分
+    items.sort(key=lambda item: item[1])
+    for entry, _ in items[:excess]:
+        try:
+            file_path = _resolve_safe_path(RECYCLE_DIR, entry)
+            os.remove(file_path)
+            # 防御性清理置顶记录（与 permanent_delete 保持一致）
+            _remove_pinned_id(os.path.splitext(entry)[0])
+        except OSError as e:
+            print(f"[Recycle] 自动清理回收站文件失败 {entry}: {e}")
+
+
 def delete_note(note_id: str) -> None:
     """
     软删除：将笔记文件移入 notes/.recycle/ 目录。
@@ -503,6 +549,9 @@ def delete_note(note_id: str) -> None:
 
     # 删除后清理置顶记录（笔记移入回收站，不再属于置顶）
     _remove_pinned_id(note_id)
+
+    # 容量控制：超过上限自动永久删除最旧的笔记
+    _enforce_recycle_capacity()
 
 
 def list_recycle() -> list[NoteSummary]:
