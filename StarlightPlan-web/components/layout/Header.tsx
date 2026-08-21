@@ -3,7 +3,7 @@
 /**
  * 顶部导航栏
  * - 左侧：应用标题「拾星Plan」
- * - 右侧：导入 / 导出 / 主题切换按钮
+ * - 右侧：导入 / 导出 / 目录按钮（主题切换已移入设置弹窗）
  *
  * 导入/导出说明：
  * - 导入：选择 .md 文件 → 调后端 /api/notes/import → 刷新列表并选中新笔记
@@ -13,14 +13,13 @@
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { Upload, Download, ListTree } from "lucide-react";
-import ThemeToggle from "@/components/common/ThemeToggle";
 import { useNoteStore } from "@/store/useNoteStore";
 import { useUiStore } from "@/store/useUiStore";
 import { useToastStore } from "@/store/useToastStore";
 import { importMarkdown } from "@/lib/api";
 import { buildPortableMarkdown } from "@/lib/exportMarkdown";
 
-/** 与 ThemeToggle 一致的图标按钮样式，保证视觉统一 */
+/** 图标按钮样式（与设置弹窗等保持一致，保证视觉统一） */
 const ICON_BTN_CLASS =
   "cursor-pointer p-1.5 rounded-lg text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors";
 
@@ -128,7 +127,7 @@ export default function Header(): React.ReactElement {
         </span>
       </div>
 
-      {/* 右侧：导入 / 导出 / 主题切换 */}
+      {/* 右侧：导出 / 导入 / 目录（主题切换已移入设置弹窗） */}
       <div className="flex items-center gap-2">
         {/* 隐藏的文件选择器：接受 .md / .markdown 文件 */}
         <input
@@ -167,8 +166,6 @@ export default function Header(): React.ReactElement {
         >
           <Download size={18} />
         </button>
-
-        <ThemeToggle />
 
         {/* 大纲（目录）切换按钮：展开编辑器右侧大纲面板 */}
         <button

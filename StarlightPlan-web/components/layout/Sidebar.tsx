@@ -635,7 +635,7 @@ export default function Sidebar(): React.ReactElement {
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className="shrink-0 flex items-center justify-start gap-2 mx-3 mb-3 px-4 py-3 rounded-lg cursor-pointer transition-colors text-sm text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200"
+          className="shrink-0 flex items-center justify-start gap-2 mx-3 mb-3 px-4 py-3 rounded-lg cursor-pointer transition-colors text-sm dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700"
         >
           <Settings size={15} className="shrink-0" />
           设置

@@ -41,7 +41,7 @@ import ScrollableTitle from "@/components/common/ScrollableTitle";
 const PANEL_SHADOW =
   "shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_8px_rgba(0,0,0,0.04),0_10px_20px_-6px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.25),0_12px_24px_-6px_rgba(0,0,0,0.4)]";
 
-/** 图标按钮样式（与 Header / ThemeToggle 同款） */
+/** 图标按钮样式（与 Header 同款） */
 const ICON_BTN_CLASS =
   "cursor-pointer p-1.5 rounded-lg text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors";
 
@@ -221,7 +221,7 @@ export default function SettingsDialog({
         {/* 主体：左选项列表 + 右内容区 */}
         <div className="flex-1 min-h-0 flex">
           {/* 左栏：选项列表（通用设置 / 回收站） */}
-          <nav className="shrink-0 w-48 border-t border-r border-neutral-100 dark:border-neutral-800 p-2 space-y-0.5">
+          <nav className="shrink-0 w-48 px-2.5 py-2 space-y-1">
             {TAB_ITEMS.map(({ key, label, Icon }) => {
               const isActive: boolean = activeTab === key;
               return (
@@ -229,10 +229,10 @@ export default function SettingsDialog({
                   key={key}
                   type="button"
                   onClick={() => handleTab(key)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                  className={`w-full h-10 flex items-center gap-2 px-3 text-sm rounded-lg cursor-pointer transition-colors dark:text-neutral-400 ${
                     isActive
-                      ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 font-medium"
-                      : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                      ? "bg-neutral-100 dark:bg-neutral-700 font-medium"
+                      : "hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   }`}
                 >
                   <Icon size={16} className="shrink-0" />
@@ -243,7 +243,7 @@ export default function SettingsDialog({
           </nav>
 
           {/* 右栏：内容区（可滚动） */}
-          <div className="flex-1 min-w-0 border-t border-neutral-100 dark:border-neutral-800 overflow-y-auto p-6">
+          <div className="flex-1 min-w-0 overflow-y-auto px-6 pb-6">
             {activeTab === "general" ? (
               <GeneralPanel mode={mode} setMode={setMode} />
             ) : (
@@ -357,9 +357,9 @@ function GeneralPanel({
               key={optionMode}
               type="button"
               onClick={() => setMode(optionMode)}
-              className={`w-24 flex flex-col items-center gap-1.5 px-4 py-3 text-sm rounded-lg border cursor-pointer transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-1.5 px-4 py-3 text-sm rounded-lg border cursor-pointer transition-colors ${
                 active
-                  ? "border-neutral-800 dark:border-neutral-200 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   : "border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500"
               }`}
             >
